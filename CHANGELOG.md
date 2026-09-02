@@ -21,5 +21,10 @@ Initial stable release of Passport Photo Camera.
 - PWA/app-shell caching with network-first navigation updates
 - browser-side processing with no application photo-upload backend
 - no generative face editing or reconstruction
+- search-friendly title, description and semantic homepage content
+- canonical clean public URL
+- WebSite/WebPage JSON-LD structured data
+- Open Graph and social metadata
+- crawl directives, robots.txt and XML sitemap with accurate last-modified date
 
 The public application URL remains unversioned. Internal asset/cache keys use the release version to prevent stale browser files.
