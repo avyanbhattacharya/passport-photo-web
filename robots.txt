@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://avyanbhattacharya.github.io/passport-photo-web/sitemap.xml
+Sitemap: https://cleanlocaltools.com/sitemap.xml
