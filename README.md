@@ -1,16 +1,22 @@
-# Passport Photo Camera
+# Free Passport Photo Maker - 2x2, 35x45 mm & 4x6 Print Sheet
 
-A free, privacy-first passport photo maker that runs in your browser.
+Passport Photo Camera is a free, privacy-first browser passport photo maker for **2 × 2 inch passport photos**, **35 × 45 mm passport/visa photos**, and **4 × 6 passport photo print sheets**.
 
-**Your passport photo does not need to be uploaded to this project's server.** Camera capture, live framing feedback, cropping, automatic positioning, brightness and contrast adjustments, automated photo checks, blur/shadow scoring, optional background processing, JPEG creation, and print-sheet generation happen locally in the browser on your device.
+**Your working passport photo does not need to be uploaded to this project's server.** Camera capture, live framing feedback, cropping, automatic positioning, brightness and contrast adjustments, automated photo checks, blur/shadow scoring, optional white-background processing, JPEG creation, and print-sheet generation happen locally in the browser on your device.
 
-Take a photo using your phone camera, align your face with passport-style guides, make basic non-generative adjustments, optionally replace the background with local portrait segmentation, and download a **2 × 2 inch**, **35 × 45 mm**, or **4 × 6 print sheet** JPEG.
+Use it from an iPhone or desktop browser to take or upload a photo, align the face with passport-style guides, run automated checks, optionally make the background white with browser-side MediaPipe segmentation, and download a finished JPEG.
 
 Current stable version: **1.0.0**
 
+## Live passport photo maker
+
+**https://avyanbhattacharya.github.io/passport-photo-web/**
+
+The plain URL always serves the current stable build. Asset versions and the service-worker cache are managed internally so users do not need a version query parameter in the public URL.
+
 ## Features
 
-- 📷 Live camera preview with on-screen framing feedback
+- 📷 Live iPhone/desktop camera preview with on-screen framing feedback
 - 🎯 Automatic face positioning using browser-side face landmarks
 - 👤 Passport-style framing guides
 - ☀️ Brightness and contrast controls
@@ -19,8 +25,8 @@ Current stable version: **1.0.0**
 - 🤖 Automated browser-side passport-photo checks
 - 👓 Optional eyewear detection
 - 🔍 Crop, zoom, and position controls
-- 🖼️ 2 × 2 inch and 35 × 45 mm formats
-- 🖨️ Exact 4 × 6 inch print sheet with four copies and cut guides
+- 🖼️ 2 × 2 inch and 35 × 45 mm passport photo formats
+- 🖨️ Exact 4 × 6 inch passport photo print sheet with four copies and cut guides
 - 📲 PWA/app-shell caching for home-screen and offline use
 - 🔒 Browser-side image processing
 - 🚫 No generative AI and no face reconstruction
@@ -28,11 +34,11 @@ Current stable version: **1.0.0**
 
 The project is plain HTML, CSS, and JavaScript. No application backend, database, or build system is required.
 
-## Live demo
+## Common uses
 
-`https://avyanbhattacharya.github.io/passport-photo-web/`
+The app is designed for people searching for a free passport photo maker, 2x2 passport photo creator, 35x45 mm passport or visa photo tool, iPhone passport photo maker, white-background passport photo tool, or 4x6 passport photo print sheet generator.
 
-The plain URL always serves the current stable build. Asset versions and the service-worker cache are managed internally so users do not need a version query parameter in the public URL.
+It is a photo-preparation utility rather than an official passport-compliance service. Always verify the current rules for the specific passport, visa, identity document, country, or application process.
 
 ## Privacy architecture
 
@@ -79,23 +85,37 @@ The implementation supports browser runtimes that expose either a foreground-onl
 
 The first use requires downloading the segmentation model, so it can take longer than subsequent uses. Always inspect hair, ears, shoulders, and clothing edges before using the result. Passport and visa authorities may have rules restricting digital background replacement or other photo retouching.
 
-## Supported photo sizes
+## Supported passport photo sizes
 
 | Format | Output |
 | --- | --- |
-| 2 × 2 inch | 600 × 600 px |
-| 35 × 45 mm | 413 × 531 px |
-| 4 × 6 print | 1200 × 1800 px |
+| 2 × 2 inch passport photo | 600 × 600 px |
+| 35 × 45 mm passport / visa photo | 413 × 531 px |
+| 4 × 6 passport photo print sheet | 1200 × 1800 px |
 
 The print sheet uses a 300-PPI layout. Print at **actual size / 100%** without fit-to-page scaling to preserve physical dimensions.
 
-## iPhone camera access
+## iPhone passport photo camera
 
 The live camera uses `navigator.mediaDevices.getUserMedia()`. Safari permits this API on secure origins, which means the deployed page should use **HTTPS**.
 
 GitHub Pages provides HTTPS automatically.
 
 On first use, Safari should ask for camera permission. If permission has previously been denied, check the Safari camera permission in iPhone Settings.
+
+## Search engine optimization
+
+The deployed page includes a canonical URL, descriptive title and meta description, Open Graph metadata, crawl directives, `WebSite` and `SoftwareApplication` JSON-LD structured data, semantic HTML content, `robots.txt`, and an XML sitemap.
+
+The canonical public URL is:
+
+`https://avyanbhattacharya.github.io/passport-photo-web/`
+
+The sitemap is:
+
+`https://avyanbhattacharya.github.io/passport-photo-web/sitemap.xml`
+
+For Google indexing and performance reporting, add the site to Google Search Console and submit the sitemap there.
 
 ## Run locally
 
