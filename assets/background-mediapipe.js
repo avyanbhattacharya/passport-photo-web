@@ -33,7 +33,7 @@
       const my=Math.min(mh-1,Math.floor(y*mh/h));
       for(let x=0;x<w;x++){
         const mx=Math.min(mw-1,Math.floor(x*mw/w)),mi=my*mw+mx,i=(y*w+x)*4;
-        let a=Math.max(0,Math.min(1,vals[mi]||0));
+        let a=Math.max(0,Math.min(1,Number(vals[mi])||0));
         a=a*a*(3-2*a);
         d[i]=Math.round(s[i]*a+255*(1-a));
         d[i+1]=Math.round(s[i+1]*a+255*(1-a));
@@ -49,14 +49,20 @@
     return new Promise((resolve,reject)=>{
       try{
         seg.segment(base,result=>{
+          const masks=result?.confidenceMasks||[];
           try{
-            const masks=result?.confidenceMasks||[];
-            if(masks.length<2)throw Error('Person mask was not returned.');
-            const composite=applyMask(base,masks[1]);
-            masks.forEach(m=>m.close?.());
-            result?.categoryMask?.close?.();
+            if(!masks.length)throw Error('No confidence mask was returned by MediaPipe.');
+            // The selfie model conceptually has background=0/person=1. Some web runtimes
+            // expose both category confidence masks, while others expose only the foreground
+            // confidence mask. Support both forms.
+            const personMask=masks.length>=2?masks[1]:masks[0];
+            const composite=applyMask(base,personMask);
             resolve(composite);
           }catch(e){reject(e)}
+          finally{
+            masks.forEach(m=>{try{m.close?.()}catch(_){}});
+            try{result?.categoryMask?.close?.()}catch(_){}
+          }
         });
       }catch(e){reject(e)}
     });
@@ -72,6 +78,7 @@
     busy=true;button.disabled=true;button.textContent='Working…';
     try{
       const base=makeBaseCanvas();
+      if(!base)throw Error('No photo is available.');
       status.textContent='Separating person from background on this device…';
       const composite=await segment(base);
       backgroundCutout=composite;
@@ -81,7 +88,7 @@
       render();
     }catch(e){
       console.error('MediaPipe background removal failed',e);
-      try{imageSegmenter?.close?.()}catch(_){ }
+      try{imageSegmenter?.close?.()}catch(_){}
       imageSegmenter=null;
       backgroundCutout=null;
       button.textContent='Make background white';
