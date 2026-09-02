@@ -11,7 +11,7 @@ Passport photo websites often require an upload before you know what happens to 
 - 📷 Live camera preview on supported mobile browsers
 - 👤 Passport-style head, eye, side-of-face, and shoulder guides
 - ☀️ Brightness and contrast controls
-- ⬜ Conservative background whitener
+- ⬜ Experimental background whitening
 - 🔍 Crop, zoom, and position controls
 - 🖼️ 2 × 2 inch and 35 × 45 mm formats
 - 🖨️ 4 × 6 inch print sheet with two copies
@@ -25,7 +25,7 @@ The project is plain HTML, CSS, and JavaScript. No build system is required.
 
 After GitHub Pages is enabled, the app will be available at:
 
-`https://abhishekb2907.github.io/passport-photo-web/`
+`https://avyanbhattacharya.github.io/passport-photo-web/`
 
 ## Privacy
 
