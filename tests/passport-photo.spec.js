@@ -17,8 +17,11 @@ test('passport photo upload reveals editor and download controls', async ({ page
   await expect(page.locator('#preview')).toHaveAttribute('width', '413');
   await expect(page.locator('#preview')).toHaveAttribute('height', '531');
 
-  await page.locator('#brightness').fill('10');
-  await expect(page.locator('#brightnessValue')).toHaveValue('10');
+  await page.locator('#brightness').evaluate(el => {
+    el.value = '10';
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+  await expect(page.locator('#brightnessValue')).toHaveText('10');
 
   await page.getByRole('button', { name: 'Reset adjustments' }).click();
   await expect(page.locator('#brightness')).toHaveValue('0');
