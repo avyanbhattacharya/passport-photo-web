@@ -7,8 +7,10 @@ test('homepage exposes the current tools and navigation works', async ({ page })
 
   const passport = page.getByRole('link', { name: /passport photo/i });
   const japa = page.getByRole('link', { name: /japa counter/i });
+  const compress = page.getByRole('link', { name: /compress pdf/i });
   await expect(passport).toBeVisible();
   await expect(japa).toBeVisible();
+  await expect(compress).toBeVisible();
 
   await passport.click();
   await expect(page).toHaveURL(/\/passport-photo\/$/);
@@ -18,4 +20,9 @@ test('homepage exposes the current tools and navigation works', async ({ page })
   await japa.click();
   await expect(page).toHaveURL(/\/japa-counter\/$/);
   await expect(page.getByRole('heading', { name: /touchless japa counter/i })).toBeVisible();
+
+  await page.goto('/');
+  await compress.click();
+  await expect(page).toHaveURL(/\/compress-pdf\/$/);
+  await expect(page.getByRole('heading', { name: /^compress pdf$/i })).toBeVisible();
 });
