@@ -6,6 +6,8 @@ A free, privacy-first passport photo maker that runs in your browser.
 
 Take a photo using your phone camera, align your face with passport-style guides, make basic non-generative adjustments, optionally replace the background with local portrait segmentation, and download a **2 × 2 inch**, **35 × 45 mm**, or **4 × 6 print sheet** JPEG.
 
+Current stable version: **1.0.0**
+
 ## Features
 
 - 📷 Live camera preview with on-screen framing feedback
@@ -13,7 +15,7 @@ Take a photo using your phone camera, align your face with passport-style guides
 - 👤 Passport-style framing guides
 - ☀️ Brightness and contrast controls
 - 🧪 Image-quality score with blur/sharpness, exposure and shadow checks
-- ⬜ Optional white-background replacement using Transformers.js + MODNet
+- ⬜ Optional white-background replacement using MediaPipe selfie segmentation
 - 🤖 Automated browser-side passport-photo checks
 - 👓 Optional eyewear detection
 - 🔍 Crop, zoom, and position controls
@@ -29,6 +31,8 @@ The project is plain HTML, CSS, and JavaScript. No application backend, database
 ## Live demo
 
 `https://avyanbhattacharya.github.io/passport-photo-web/`
+
+The plain URL always serves the current stable build. Asset versions and the service-worker cache are managed internally so users do not need a version query parameter in the public URL.
 
 ## Privacy architecture
 
@@ -53,7 +57,7 @@ The following operations are performed client-side:
 
 This project does not include a photo-upload API, application database, analytics SDK, or server-side image-processing service.
 
-Some optional machine-learning features require model files and JavaScript/WebAssembly dependencies to be downloaded from third-party hosting such as Hugging Face/CDN infrastructure. The models then process the working photo locally in the browser. The project itself does not send the working passport photo to its own server for processing.
+Some optional machine-learning features require model files and JavaScript/WebAssembly dependencies to be downloaded from third-party hosting. The models then process the working photo locally in the browser. The project itself does not send the working passport photo to its own server for processing.
 
 Reloading or closing the page clears the working photo. As always, review deployed forks independently because a fork can change the code.
 
@@ -63,17 +67,17 @@ The project includes a web app manifest and service worker. After the site has l
 
 On iPhone, open the site in Safari and use **Share → Add to Home Screen**.
 
-Optional machine-learning features may still require their external model files to have been downloaded previously. Core camera/editor/print functionality is cached separately from those external model files.
+Navigation is network-first so deployed updates are picked up when online, with the cached page available as an offline fallback. Optional machine-learning features may still require their external model files to have been downloaded previously.
 
 ## Background removal
 
-The optional **Make background white** feature dynamically loads `@huggingface/transformers` and the `Xenova/modnet` portrait-matting model only when the feature is used.
+The optional **Make background white** feature uses MediaPipe Tasks Vision and the lightweight selfie-segmentation model.
 
-The model runs in the browser. It creates a foreground alpha mask and composites the original foreground pixels over white. It does not regenerate or reconstruct the face.
+The model runs in the browser and produces a person/background confidence mask. The app composites the existing foreground pixels over a white background. It does not regenerate or reconstruct the face.
 
-The first use requires downloading the model files, so it can take longer than subsequent uses. Model files may be cached by the browser.
+The implementation supports browser runtimes that expose either a foreground-only confidence mask or separate background/person masks. This compatibility path was added for iPhone Safari.
 
-Always inspect hair, ears, shoulders, and clothing edges before using the result. Passport and visa authorities may have rules restricting digital background replacement or other photo retouching.
+The first use requires downloading the segmentation model, so it can take longer than subsequent uses. Always inspect hair, ears, shoulders, and clothing edges before using the result. Passport and visa authorities may have rules restricting digital background replacement or other photo retouching.
 
 ## Supported photo sizes
 
@@ -121,6 +125,12 @@ Desktop browsers generally treat localhost as a secure development context. For 
 6. Save.
 
 GitHub will publish the site over HTTPS.
+
+## Versioning
+
+Stable releases use semantic versions such as `1.0.0`. The current version is also recorded in the repository's `VERSION` file and release history is summarized in `CHANGELOG.md`.
+
+The public GitHub Pages URL intentionally has no version suffix. Internal asset query strings and service-worker cache names are versioned to prevent stale browser/PWA files after upgrades.
 
 ## Passport requirements
 
