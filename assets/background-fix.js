@@ -3,6 +3,79 @@
   const status=document.getElementById('backgroundStatus');
   if(!button||!status)return;
 
+  let imageSegmenter=null;
+
+  async function getSegmenter(){
+    if(imageSegmenter)return imageSegmenter;
+    status.textContent='Loading lightweight MediaPipe background model…';
+    const {ImageSegmenter,FilesetResolver}=await import('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1/+esm');
+    const vision=await FilesetResolver.forVisionTasks('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1/wasm');
+    imageSegmenter=await ImageSegmenter.createFromOptions(vision,{
+      baseOptions:{
+        modelAssetPath:'https://storage.googleapis.com/mediapipe-models/image_segmenter/selfie_segmenter/float16/latest/selfie_segmenter.tflite',
+        delegate:'CPU'
+      },
+      runningMode:'IMAGE',
+      outputCategoryMask:false,
+      outputConfidenceMasks:true
+    });
+    return imageSegmenter;
+  }
+
+  function runSegmenter(seg,img){
+    return new Promise((resolve,reject)=>{
+      try{
+        seg.segment(img,result=>resolve(result));
+      }catch(e){reject(e);}
+    });
+  }
+
+  function imageFromCanvas(c){
+    return new Promise((resolve,reject)=>{
+      const img=new Image();
+      img.onload=()=>resolve(img);
+      img.onerror=()=>reject(new Error('Could not prepare photo for background processing.'));
+      img.src=c.toDataURL('image/jpeg',.95);
+    });
+  }
+
+  function compositeWithPersonMask(base,result){
+    const masks=result?.confidenceMasks;
+    if(!masks||masks.length<2)throw new Error('MediaPipe did not return a person mask.');
+    const mask=masks[1];
+    const values=mask.getAsFloat32Array();
+    const mw=mask.width||256,mh=mask.height||256;
+
+    const maskCanvas=document.createElement('canvas');
+    maskCanvas.width=mw;maskCanvas.height=mh;
+    const mctx=maskCanvas.getContext('2d');
+    const imageData=mctx.createImageData(mw,mh);
+    for(let i=0,j=0;i<values.length;i++,j+=4){
+      const a=Math.max(0,Math.min(255,Math.round(values[i]*255)));
+      imageData.data[j]=255;
+      imageData.data[j+1]=255;
+      imageData.data[j+2]=255;
+      imageData.data[j+3]=a;
+    }
+    mctx.putImageData(imageData,0,0);
+
+    const person=document.createElement('canvas');
+    person.width=base.width;person.height=base.height;
+    const pctx=person.getContext('2d');
+    pctx.drawImage(base,0,0);
+    pctx.globalCompositeOperation='destination-in';
+    pctx.imageSmoothingEnabled=true;
+    pctx.drawImage(maskCanvas,0,0,base.width,base.height);
+    pctx.globalCompositeOperation='source-over';
+
+    const composite=document.createElement('canvas');
+    composite.width=base.width;composite.height=base.height;
+    const ctx=composite.getContext('2d');
+    ctx.fillStyle='#fff';ctx.fillRect(0,0,composite.width,composite.height);
+    ctx.drawImage(person,0,0);
+    return composite;
+  }
+
   button.onclick=async()=>{
     if(backgroundBusy||!source)return;
     if(backgroundCutout){
@@ -15,56 +88,27 @@
     backgroundBusy=true;
     button.disabled=true;
     button.textContent='Working…';
-
     try{
-      if(!segmenter){
-        status.textContent='Loading lightweight background model…';
-        const {pipeline}=await import('https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.8.1');
-        try{
-          segmenter=await pipeline('background-removal','Xenova/modnet',{
-            dtype:'q8',
-            progress_callback:p=>{
-              if(typeof p?.progress==='number'){
-                const pct=p.progress<=1?Math.round(p.progress*100):Math.round(p.progress);
-                status.textContent=`Loading background model… ${Math.max(0,Math.min(100,pct))}%`;
-              }
-            }
-          });
-        }catch(q8Error){
-          console.warn('q8 MODNet load failed, retrying fp32',q8Error);
-          status.textContent='Retrying background model in compatibility mode…';
-          segmenter=await pipeline('background-removal','Xenova/modnet',{dtype:'fp32'});
-        }
-      }
-
+      const seg=await getSegmenter();
       status.textContent='Separating person from background on this device…';
       const base=makeBaseCanvas();
-      if(!base)throw Error('No photo is available.');
-      const input=base.toDataURL('image/png');
-      const result=await segmenter(input);
-      const cutout=Array.isArray(result)?result[0]:result;
-      if(!cutout?.toCanvas)throw Error('Background model returned an unsupported result.');
-
-      const cutoutCanvas=await cutout.toCanvas();
-      const composite=document.createElement('canvas');
-      composite.width=base.width;
-      composite.height=base.height;
-      const ctx=composite.getContext('2d');
-      ctx.fillStyle='#ffffff';
-      ctx.fillRect(0,0,composite.width,composite.height);
-      ctx.drawImage(cutoutCanvas,0,0,composite.width,composite.height);
-
-      backgroundCutout=composite;
+      if(!base)throw new Error('No photo is available.');
+      const img=await imageFromCanvas(base);
+      const result=await runSegmenter(seg,img);
+      backgroundCutout=compositeWithPersonMask(base,result);
+      result?.confidenceMasks?.forEach(m=>m.close?.());
+      result?.categoryMask?.close?.();
       button.textContent='Restore original background';
-      status.textContent='White background applied. Inspect hair, ears and shoulder edges before downloading.';
+      status.textContent='White background applied with lightweight MediaPipe selfie segmentation. Inspect hair, ears and shoulders before downloading.';
       clearChecks('Background changed. Run checks again to evaluate the edited photo.');
       render();
     }catch(e){
-      console.error('Background removal failed',e);
-      segmenter=null;
+      console.error('MediaPipe background removal failed',e);
+      imageSegmenter?.close?.();
+      imageSegmenter=null;
       backgroundCutout=null;
       button.textContent='Make background white';
-      status.textContent=`Background removal failed: ${e?.message||'unknown browser/model error'}. Try again on a strong connection or reload the page.`;
+      status.textContent=`Background removal failed: ${e?.message||'unknown MediaPipe error'}`;
     }finally{
       backgroundBusy=false;
       button.disabled=false;
