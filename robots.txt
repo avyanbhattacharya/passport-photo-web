@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://abhishekb2907.github.io/passport-photo-web/sitemap.xml
+Sitemap: https://avyanbhattacharya.github.io/passport-photo-web/sitemap.xml
