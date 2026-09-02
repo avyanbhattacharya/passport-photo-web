@@ -2,7 +2,7 @@
 
 A free, privacy-first passport photo maker that runs entirely in the browser.
 
-Take a photo using your phone camera, align your face with passport-style guides, make basic non-generative adjustments, and download a **2 × 2 inch**, **35 × 45 mm**, or **4 × 6 print sheet** JPEG.
+Take a photo using your phone camera, align your face with passport-style guides, make basic non-generative adjustments, optionally replace the background with local portrait segmentation, and download a **2 × 2 inch**, **35 × 45 mm**, or **4 × 6 print sheet** JPEG.
 
 ## Why this project?
 
@@ -11,7 +11,7 @@ Passport photo websites often require an upload before you know what happens to 
 - 📷 Live camera preview on supported mobile browsers
 - 👤 Passport-style head, eye, side-of-face, and shoulder guides
 - ☀️ Brightness and contrast controls
-- ⬜ Experimental background whitening
+- ⬜ Optional white-background replacement using Transformers.js + MODNet
 - 🔍 Crop, zoom, and position controls
 - 🖼️ 2 × 2 inch and 35 × 45 mm formats
 - 🖨️ 4 × 6 inch print sheet with two copies
@@ -27,9 +27,21 @@ After GitHub Pages is enabled, the app will be available at:
 
 `https://avyanbhattacharya.github.io/passport-photo-web/`
 
+## Background removal
+
+The optional **Make background white** feature dynamically loads `@huggingface/transformers` and the `Xenova/modnet` portrait-matting model only when the feature is used.
+
+The model runs in the browser. It creates a foreground alpha mask and composites the original foreground pixels over white. It does not regenerate or reconstruct the face.
+
+The first use requires downloading the model files, so it can take longer than subsequent uses. Model files may be cached by the browser.
+
+Always inspect hair, ears, shoulders, and clothing edges before using the result. Passport and visa authorities may have rules restricting digital background replacement or other photo retouching.
+
 ## Privacy
 
 Photos are processed locally using browser APIs and HTML Canvas. This project does not include an API endpoint, database, analytics SDK, or photo-upload service.
+
+The optional background-removal model is downloaded from Hugging Face/CDN infrastructure, but the selected photo itself is processed locally by the browser and is not sent to this project's server.
 
 Reloading or closing the page clears the working photo.
 
