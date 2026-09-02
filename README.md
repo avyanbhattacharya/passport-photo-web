@@ -1,31 +1,54 @@
 # Passport Photo Camera
 
-A free, privacy-first passport photo maker that runs entirely in the browser.
+A free, privacy-first passport photo maker that runs in your browser.
+
+**Your passport photo does not need to be uploaded to this project's server.** Camera capture, cropping, brightness and contrast adjustments, automated photo checks, optional background processing, JPEG creation, and print-sheet generation happen locally in the browser on your device.
 
 Take a photo using your phone camera, align your face with passport-style guides, make basic non-generative adjustments, optionally replace the background with local portrait segmentation, and download a **2 × 2 inch**, **35 × 45 mm**, or **4 × 6 print sheet** JPEG.
 
 ## Why this project?
 
-Passport photo websites often require an upload before you know what happens to your image. This project takes a simpler approach:
+Passport photos are sensitive identity images. Many online photo tools require you to upload the image to a remote service before processing it. This project takes a different approach: modern browser APIs, Canvas, WebAssembly and client-side ML can do the processing on your own device.
 
 - 📷 Live camera preview on supported mobile browsers
-- 👤 Passport-style head, eye, side-of-face, and shoulder guides
+- 👤 Passport-style framing guides
 - ☀️ Brightness and contrast controls
 - ⬜ Optional white-background replacement using Transformers.js + MODNet
+- 🤖 Automated browser-side photo checks
 - 🔍 Crop, zoom, and position controls
 - 🖼️ 2 × 2 inch and 35 × 45 mm formats
-- 🖨️ 4 × 6 inch print sheet with two copies
+- 🖨️ Exact 4 × 6 inch print sheet with four copies and cut guides
 - 🔒 Browser-side image processing
 - 🚫 No generative AI and no face reconstruction
-- 🚫 No server-side photo upload
+- 🚫 No project server-side photo upload
 
-The project is plain HTML, CSS, and JavaScript. No build system is required.
+The project is plain HTML, CSS, and JavaScript. No application backend, database, or build system is required.
 
 ## Live demo
 
-After GitHub Pages is enabled, the app will be available at:
-
 `https://avyanbhattacharya.github.io/passport-photo-web/`
+
+## Privacy architecture
+
+The browser is the application runtime. The working image remains in browser memory while the app performs its photo operations.
+
+The following operations are performed client-side:
+
+- camera capture and existing-photo selection
+- cropping, zooming and positioning
+- brightness and contrast adjustments
+- face-landmark and photo-quality checks
+- optional eyewear detection
+- optional portrait segmentation/background replacement
+- output resizing
+- JPEG generation
+- exact-size 4 × 6 print-sheet composition
+
+This project does not include a photo-upload API, application database, analytics SDK, or server-side image-processing service.
+
+Some optional machine-learning features require model files and JavaScript/WebAssembly dependencies to be downloaded from third-party hosting such as Hugging Face/CDN infrastructure. The models then process the working photo locally in the browser. The project itself does not send the working passport photo to its own server for processing.
+
+Reloading or closing the page clears the working photo. As always, review deployed forks independently because a fork can change the code.
 
 ## Background removal
 
@@ -37,16 +60,6 @@ The first use requires downloading the model files, so it can take longer than s
 
 Always inspect hair, ears, shoulders, and clothing edges before using the result. Passport and visa authorities may have rules restricting digital background replacement or other photo retouching.
 
-## Privacy
-
-Photos are processed locally using browser APIs and HTML Canvas. This project does not include an API endpoint, database, analytics SDK, or photo-upload service.
-
-The optional background-removal model is downloaded from Hugging Face/CDN infrastructure, but the selected photo itself is processed locally by the browser and is not sent to this project's server.
-
-Reloading or closing the page clears the working photo.
-
-As always, review deployed forks independently. A fork can change the code.
-
 ## Supported photo sizes
 
 | Format | Output |
@@ -55,7 +68,7 @@ As always, review deployed forks independently. A fork can change the code.
 | 35 × 45 mm | 413 × 531 px |
 | 4 × 6 print | 1200 × 1800 px |
 
-The pixel dimensions correspond to a 300-PPI print layout.
+The print sheet uses a 300-PPI layout. Print at **actual size / 100%** without fit-to-page scaling to preserve physical dimensions.
 
 ## iPhone camera access
 
@@ -93,23 +106,6 @@ Desktop browsers generally treat localhost as a secure development context. For 
 6. Save.
 
 GitHub will publish the site over HTTPS.
-
-## Current limitations
-
-This version uses a visual passport framing guide rather than making claims that it can certify government compliance.
-
-Future improvements could include:
-
-- on-device face landmark detection
-- automatic head-size and eye-position measurement
-- head tilt / yaw warnings
-- lighting uniformity checks
-- background uniformity checks
-- automatic capture when positioning is good
-- country/document presets
-- PWA installation
-- offline support after first load
-- accessibility improvements
 
 ## Passport requirements
 
