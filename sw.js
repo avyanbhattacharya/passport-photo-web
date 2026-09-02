@@ -1,5 +1,5 @@
-const CACHE='passport-photo-v13';
-const CORE=['./','./index.html','./assets/style.css?v=13','./assets/app.js?v=10','./assets/glasses-check.js?v=1','./assets/print-guides.js?v=12','./assets/advanced.js?v=13','./manifest.webmanifest','./assets/icon.svg'];
+const CACHE='passport-photo-v14';
+const CORE=['./','./index.html','./assets/style.css?v=13','./assets/app.js?v=10','./assets/background-fix.js?v=14','./assets/glasses-check.js?v=1','./assets/print-guides.js?v=12','./assets/advanced.js?v=13','./manifest.webmanifest','./assets/icon.svg'];
 self.addEventListener('install',event=>{event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(CORE)));self.skipWaiting();});
 self.addEventListener('activate',event=>{event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))));self.clients.claim();});
 self.addEventListener('fetch',event=>{
