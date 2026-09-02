@@ -8,9 +8,11 @@ test('homepage exposes the current tools and navigation works', async ({ page })
   const passport = page.getByRole('link', { name: /passport photo/i });
   const japa = page.getByRole('link', { name: /japa counter/i });
   const compress = page.getByRole('link', { name: /compress pdf/i });
+  const merge = page.getByRole('link', { name: /merge pdf/i });
   await expect(passport).toBeVisible();
   await expect(japa).toBeVisible();
   await expect(compress).toBeVisible();
+  await expect(merge).toBeVisible();
 
   await passport.click();
   await expect(page).toHaveURL(/\/passport-photo\/$/);
@@ -25,4 +27,9 @@ test('homepage exposes the current tools and navigation works', async ({ page })
   await compress.click();
   await expect(page).toHaveURL(/\/compress-pdf\/$/);
   await expect(page.getByRole('heading', { name: /^compress pdf$/i })).toBeVisible();
+
+  await page.goto('/');
+  await merge.click();
+  await expect(page).toHaveURL(/\/merge-pdf\/$/);
+  await expect(page.getByRole('heading', { name: /^merge pdf$/i })).toBeVisible();
 });
