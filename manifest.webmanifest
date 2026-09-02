@@ -1,0 +1,18 @@
+{
+  "name": "Passport Photo Camera",
+  "short_name": "Passport Photo",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f5f6f8",
+  "theme_color": "#111827",
+  "description": "Privacy-first passport photo maker with browser-side processing, automated checks and exact print layouts.",
+  "icons": [
+    {
+      "src": "assets/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
