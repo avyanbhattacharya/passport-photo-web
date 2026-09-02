@@ -4,7 +4,8 @@ const pages = [
   ['/', 'https://cleanlocaltools.com/'],
   ['/passport-photo/', 'https://cleanlocaltools.com/passport-photo/'],
   ['/japa-counter/', 'https://cleanlocaltools.com/japa-counter/'],
-  ['/japa-counter/tap.html', 'https://cleanlocaltools.com/japa-counter/tap.html']
+  ['/japa-counter/tap.html', 'https://cleanlocaltools.com/japa-counter/tap.html'],
+  ['/compress-pdf/', 'https://cleanlocaltools.com/compress-pdf/']
 ];
 
 for (const [path, canonical] of pages) {
