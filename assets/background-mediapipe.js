@@ -7,12 +7,13 @@
 
   async function getSegmenter(){
     if(imageSegmenter)return imageSegmenter;
-    status.textContent='Loading lightweight mobile background model…';
+    status.textContent='Loading lightweight MediaPipe background model…';
     const mod=await import('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1/+esm');
     const vision=await mod.FilesetResolver.forVisionTasks('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1/wasm');
     imageSegmenter=await mod.ImageSegmenter.createFromOptions(vision,{
       baseOptions:{
-        modelAssetPath:'https://storage.googleapis.com/mediapipe-models/image_segmenter/selfie_segmenter/float16/latest/selfie_segmenter.tflite'
+        modelAssetPath:'https://storage.googleapis.com/mediapipe-models/image_segmenter/selfie_segmenter/float16/latest/selfie_segmenter.tflite',
+        delegate:'CPU'
       },
       runningMode:'IMAGE',
       outputCategoryMask:false,
@@ -45,14 +46,15 @@
 
   async function segment(base){
     const seg=await getSegmenter();
-    return await new Promise((resolve,reject)=>{
+    return new Promise((resolve,reject)=>{
       try{
         seg.segment(base,result=>{
           try{
-            const masks=result.confidenceMasks||[];
+            const masks=result?.confidenceMasks||[];
             if(masks.length<2)throw Error('Person mask was not returned.');
-            const personMask=masks[1];
-            const composite=applyMask(base,personMask);
+            const composite=applyMask(base,masks[1]);
+            masks.forEach(m=>m.close?.());
+            result?.categoryMask?.close?.();
             resolve(composite);
           }catch(e){reject(e)}
         });
@@ -74,12 +76,16 @@
       const composite=await segment(base);
       backgroundCutout=composite;
       button.textContent='Restore original background';
-      status.textContent='White background applied with lightweight MediaPipe selfie segmentation. Inspect hair and shoulder edges before downloading.';
+      status.textContent='White background applied with lightweight MediaPipe selfie segmentation. Inspect hair, ears and shoulder edges before downloading.';
       clearChecks('Background changed. Run checks again to evaluate the edited photo.');
       render();
     }catch(e){
       console.error('MediaPipe background removal failed',e);
-      clearBackgroundResult(`Background removal failed: ${e?.message||e}. Reload and try again.`);
+      try{imageSegmenter?.close?.()}catch(_){ }
+      imageSegmenter=null;
+      backgroundCutout=null;
+      button.textContent='Make background white';
+      status.textContent=`MediaPipe background removal failed: ${e?.message||e}`;
     }finally{
       busy=false;button.disabled=false;
       if(typeof backgroundCutout!=='undefined'&&backgroundCutout)button.textContent='Restore original background';
