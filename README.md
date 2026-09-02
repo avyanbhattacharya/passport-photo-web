@@ -2,22 +2,24 @@
 
 A free, privacy-first passport photo maker that runs in your browser.
 
-**Your passport photo does not need to be uploaded to this project's server.** Camera capture, cropping, brightness and contrast adjustments, automated photo checks, optional background processing, JPEG creation, and print-sheet generation happen locally in the browser on your device.
+**Your passport photo does not need to be uploaded to this project's server.** Camera capture, live framing feedback, cropping, automatic positioning, brightness and contrast adjustments, automated photo checks, blur/shadow scoring, optional background processing, JPEG creation, and print-sheet generation happen locally in the browser on your device.
 
 Take a photo using your phone camera, align your face with passport-style guides, make basic non-generative adjustments, optionally replace the background with local portrait segmentation, and download a **2 × 2 inch**, **35 × 45 mm**, or **4 × 6 print sheet** JPEG.
 
-## Why this project?
+## Features
 
-Passport photos are sensitive identity images. Many online photo tools require you to upload the image to a remote service before processing it. This project takes a different approach: modern browser APIs, Canvas, WebAssembly and client-side ML can do the processing on your own device.
-
-- 📷 Live camera preview on supported mobile browsers
+- 📷 Live camera preview with on-screen framing feedback
+- 🎯 Automatic face positioning using browser-side face landmarks
 - 👤 Passport-style framing guides
 - ☀️ Brightness and contrast controls
+- 🧪 Image-quality score with blur/sharpness, exposure and shadow checks
 - ⬜ Optional white-background replacement using Transformers.js + MODNet
-- 🤖 Automated browser-side photo checks
+- 🤖 Automated browser-side passport-photo checks
+- 👓 Optional eyewear detection
 - 🔍 Crop, zoom, and position controls
 - 🖼️ 2 × 2 inch and 35 × 45 mm formats
 - 🖨️ Exact 4 × 6 inch print sheet with four copies and cut guides
+- 📲 PWA/app-shell caching for home-screen and offline use
 - 🔒 Browser-side image processing
 - 🚫 No generative AI and no face reconstruction
 - 🚫 No project server-side photo upload
@@ -35,9 +37,14 @@ The browser is the application runtime. The working image remains in browser mem
 The following operations are performed client-side:
 
 - camera capture and existing-photo selection
+- live face/framing feedback
+- automatic face positioning
 - cropping, zooming and positioning
 - brightness and contrast adjustments
-- face-landmark and photo-quality checks
+- face-landmark and passport-photo checks
+- blur/sharpness scoring
+- exposure scoring
+- face-shadow / lighting-balance scoring
 - optional eyewear detection
 - optional portrait segmentation/background replacement
 - output resizing
@@ -49,6 +56,14 @@ This project does not include a photo-upload API, application database, analytic
 Some optional machine-learning features require model files and JavaScript/WebAssembly dependencies to be downloaded from third-party hosting such as Hugging Face/CDN infrastructure. The models then process the working photo locally in the browser. The project itself does not send the working passport photo to its own server for processing.
 
 Reloading or closing the page clears the working photo. As always, review deployed forks independently because a fork can change the code.
+
+## Offline / PWA support
+
+The project includes a web app manifest and service worker. After the site has loaded, the core application shell can be cached for offline use and can be added to a phone home screen.
+
+On iPhone, open the site in Safari and use **Share → Add to Home Screen**.
+
+Optional machine-learning features may still require their external model files to have been downloaded previously. Core camera/editor/print functionality is cached separately from those external model files.
 
 ## Background removal
 
