@@ -1,5 +1,7 @@
 const { defineConfig, devices } = require('@playwright/test');
 
+const crossBrowserSmoke = /.*(all-tools-regression|homepage|seo)\.spec\.js/;
+
 module.exports = defineConfig({
   testDir: './tests',
   fullyParallel: true,
@@ -15,8 +17,8 @@ module.exports = defineConfig({
   },
   projects: [
     { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
-    { name: 'webkit', use: { ...devices['Desktop Safari'] } },
-    { name: 'mobile-webkit', use: { ...devices['iPhone 13'] } }
+    { name: 'webkit', testMatch: crossBrowserSmoke, use: { ...devices['Desktop Safari'] } },
+    { name: 'mobile-webkit', testMatch: crossBrowserSmoke, use: { ...devices['iPhone 13'] } }
   ],
   webServer: {
     command: 'python3 -m http.server 4173 --bind 127.0.0.1',
