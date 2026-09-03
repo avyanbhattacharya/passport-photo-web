@@ -9,7 +9,12 @@ const tools = [
   ['/merge-pdf/', /Merge PDF/i],
   ['/resize-image/', /Resize & Compress Image/i],
   ['/clean-pdf-printer/', /Clean PDF Printer/i],
-  ['/document-flattener/', /Document Flattener/i]
+  ['/document-flattener/', /Document Flattener/i],
+  ['/image-to-pdf/', /Image to PDF/i],
+  ['/split-pdf/', /Split PDF/i],
+  ['/heic-to-jpg/', /HEIC to JPG/i],
+  ['/remove-photo-metadata/', /Remove Photo Metadata/i],
+  ['/qr-code-maker/', /QR Code Maker/i]
 ];
 
 for (const [route, heading] of tools) {
