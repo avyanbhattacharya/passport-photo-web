@@ -9,7 +9,12 @@ const pages = [
   ['/merge-pdf/', 'https://cleanlocaltools.com/merge-pdf/'],
   ['/resize-image/', 'https://cleanlocaltools.com/resize-image/'],
   ['/clean-pdf-printer/', 'https://cleanlocaltools.com/clean-pdf-printer/'],
-  ['/document-flattener/', 'https://cleanlocaltools.com/document-flattener/']
+  ['/document-flattener/', 'https://cleanlocaltools.com/document-flattener/'],
+  ['/image-to-pdf/', 'https://cleanlocaltools.com/image-to-pdf/'],
+  ['/split-pdf/', 'https://cleanlocaltools.com/split-pdf/'],
+  ['/heic-to-jpg/', 'https://cleanlocaltools.com/heic-to-jpg/'],
+  ['/remove-photo-metadata/', 'https://cleanlocaltools.com/remove-photo-metadata/'],
+  ['/qr-code-maker/', 'https://cleanlocaltools.com/qr-code-maker/']
 ];
 
 for (const [path, canonical] of pages) {
