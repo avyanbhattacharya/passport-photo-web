@@ -31,13 +31,23 @@ for (const [route, heading] of tools) {
 
   test(`${route} stays within the viewport`, async ({ page }) => {
     await page.goto(route, { waitUntil: 'domcontentloaded' });
-    const metrics = await page.evaluate(() => ({
-      scrollWidth: document.documentElement.scrollWidth,
-      clientWidth: document.documentElement.clientWidth
-    }));
+    const metrics = await page.evaluate(() => ({ scrollWidth: document.documentElement.scrollWidth, clientWidth: document.documentElement.clientWidth }));
     expect(metrics.scrollWidth - metrics.clientWidth, `${route} horizontal overflow`).toBeLessThanOrEqual(2);
   });
+
+  test(`${route} carries the privacy tagline`, async ({ page }) => {
+    await page.goto(route, { waitUntil: 'domcontentloaded' });
+    await expect(page.locator('body')).toContainText('Your files never leave your machine.');
+  });
 }
+
+test('homepage exposes privacy tagline to search engines', async ({ page }) => {
+  await page.goto('/');
+  await expect(page).toHaveTitle(/Your Files Never Leave Your Machine/i);
+  await expect(page.locator('meta[name="description"]')).toHaveAttribute('content', /Your files never leave your machine/i);
+  await expect(page.locator('meta[property="og:description"]')).toHaveAttribute('content', /Your files never leave your machine/i);
+  await expect(page.locator('script[type="application\/ld\+json"]')).toContainText('Your files never leave your machine');
+});
 
 test('every sitemap tool URL is reachable locally', async ({ request }) => {
   const sitemapResponse = await request.get('/sitemap.xml');
