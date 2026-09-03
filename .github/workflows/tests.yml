@@ -26,18 +26,9 @@ jobs:
         with:
           node-version: '24'
       - name: Site metadata and catalog
-        id: static_site
-        continue-on-error: true
         run: npm run test:static:site
       - name: Test architecture and hygiene
-        id: static_hygiene
-        continue-on-error: true
         run: npm run test:static:hygiene
-      - name: Enforce static checks
-        if: always()
-        run: |
-          test "${{ steps.static_site.outcome }}" = "success"
-          test "${{ steps.static_hygiene.outcome }}" = "success"
 
   chromium:
     name: Deep Chromium
@@ -55,31 +46,19 @@ jobs:
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
       - name: Core and Japa deep tests
-        id: chromium_core
-        continue-on-error: true
         run: npm run test:chromium:core
       - name: PDF deep tests
-        id: chromium_pdf
-        continue-on-error: true
         run: npm run test:chromium:pdf
       - name: Image and catalog deep tests
-        id: chromium_image
-        continue-on-error: true
         run: npm run test:chromium:image
       - name: Upload Chromium report on failure
-        if: steps.chromium_core.outcome == 'failure' || steps.chromium_pdf.outcome == 'failure' || steps.chromium_image.outcome == 'failure'
+        if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report-chromium
           path: playwright-report/
           if-no-files-found: ignore
           retention-days: 7
-      - name: Enforce deep Chromium result
-        if: always()
-        run: |
-          test "${{ steps.chromium_core.outcome }}" = "success"
-          test "${{ steps.chromium_pdf.outcome }}" = "success"
-          test "${{ steps.chromium_image.outcome }}" = "success"
 
   compatibility:
     name: WebKit and iPhone smoke
@@ -97,23 +76,14 @@ jobs:
       - name: Install WebKit
         run: npx playwright install --with-deps webkit
       - name: Desktop WebKit smoke
-        id: compat_webkit
-        continue-on-error: true
         run: npm run test:compat:webkit
       - name: iPhone WebKit smoke
-        id: compat_mobile
-        continue-on-error: true
         run: npm run test:compat:mobile
       - name: Upload compatibility report on failure
-        if: steps.compat_webkit.outcome == 'failure' || steps.compat_mobile.outcome == 'failure'
+        if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report-compatibility
           path: playwright-report/
           if-no-files-found: ignore
           retention-days: 7
-      - name: Enforce compatibility result
-        if: always()
-        run: |
-          test "${{ steps.compat_webkit.outcome }}" = "success"
-          test "${{ steps.compat_mobile.outcome }}" = "success"
