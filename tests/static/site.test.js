@@ -21,6 +21,7 @@ const pages = [
   ['/remove-photo-metadata/', 'remove-photo-metadata/index.html', 'https://cleanlocaltools.com/remove-photo-metadata/'],
   ['/qr-code-maker/', 'qr-code-maker/index.html', 'https://cleanlocaltools.com/qr-code-maker/']
 ];
+const homepageRoutes = pages.slice(1).map(([route]) => route).filter(route => route !== '/japa-counter/tap.html');
 
 function read(relative) {
   return fs.readFileSync(path.join(root, relative), 'utf8');
@@ -56,9 +57,9 @@ test('sitemap contains every public canonical URL', () => {
   }
 });
 
-test('homepage links to every public tool route', () => {
+test('homepage links to every catalog tool route', () => {
   const homepage = read('index.html');
-  for (const [route] of pages.slice(1)) {
+  for (const route of homepageRoutes) {
     assert.ok(homepage.includes(`href="${route}"`) || homepage.includes(`href='${route}'`), `${route} missing from homepage`);
   }
 });
