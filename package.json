@@ -3,7 +3,10 @@
   "private": true,
   "version": "1.0.0",
   "scripts": {
-    "test": "playwright test",
+    "test": "npm run test:static && npm run test:chromium && npm run test:compat",
+    "test:static": "node --test tests/static/*.test.js",
+    "test:chromium": "playwright test --project=chromium",
+    "test:compat": "playwright test --project=webkit --project=mobile-webkit",
     "test:headed": "playwright test --headed",
     "test:report": "playwright show-report"
   },
