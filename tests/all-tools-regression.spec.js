@@ -35,13 +35,16 @@ for (const [route, heading] of tools) {
     expect(metrics.scrollWidth - metrics.clientWidth, `${route} horizontal overflow`).toBeLessThanOrEqual(2);
   });
 
-  test(`${route} carries the privacy tagline`, async ({ page }) => {
+  test(`${route} carries the privacy tagline in UI and search metadata`, async ({ page }) => {
     await page.goto(route, { waitUntil: 'domcontentloaded' });
     await expect(page.locator('body')).toContainText('Your files never leave your machine.');
+    await expect(page.locator('meta[name="description"]')).toHaveAttribute('content', /Your files never leave your machine/i);
+    const structured = page.locator('script[type="application\/ld\+json"]');
+    if (await structured.count()) await expect(structured.first()).toContainText('Your files never leave your machine');
   });
 }
 
-test('homepage exposes privacy tagline to search engines', async ({ page }) => {
+test('homepage exposes privacy tagline across primary discovery metadata', async ({ page }) => {
   await page.goto('/');
   await expect(page).toHaveTitle(/Your Files Never Leave Your Machine/i);
   await expect(page.locator('meta[name="description"]')).toHaveAttribute('content', /Your files never leave your machine/i);
