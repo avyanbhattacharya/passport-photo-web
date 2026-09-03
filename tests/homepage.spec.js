@@ -12,7 +12,12 @@ test('homepage exposes every current tool and navigation works', async ({ page }
     [/merge pdf/i, /\/merge-pdf\/$/, /^merge pdf$/i],
     [/resize & compress image/i, /\/resize-image\/$/, /resize & compress image/i],
     [/clean pdf printer/i, /\/clean-pdf-printer\/$/, /clean pdf printer/i],
-    [/document flattener/i, /\/document-flattener\/$/, /document flattener/i]
+    [/document flattener/i, /\/document-flattener\/$/, /document flattener/i],
+    [/image to pdf/i, /\/image-to-pdf\/$/, /image to pdf/i],
+    [/split pdf/i, /\/split-pdf\/$/, /split pdf/i],
+    [/heic to jpg/i, /\/heic-to-jpg\/$/, /heic to jpg/i],
+    [/remove photo metadata/i, /\/remove-photo-metadata\/$/, /remove photo metadata/i],
+    [/qr code maker/i, /\/qr-code-maker\/$/, /qr code maker/i]
   ];
 
   for (const [linkName] of tools) await expect(page.getByRole('link', { name: linkName })).toBeVisible();
