@@ -69,14 +69,12 @@ test('image zoom works above and below 100 percent while frame stays fixed', asy
   const canvas = page.locator('#preview');
   const cropBefore = await overlay.boundingBox();
   const imageBefore = await canvas.boundingBox();
-
   await page.getByRole('button', { name:'Zoom image in' }).click();
   await expect(page.locator('#imageZoomValue')).toHaveText('110%');
   const cropAfterIn = await overlay.boundingBox();
   const imageAfterIn = await canvas.boundingBox();
   expect(Math.abs(cropAfterIn.width - cropBefore.width)).toBeLessThan(1);
   expect(imageAfterIn.width).toBeGreaterThan(imageBefore.width);
-
   await page.getByRole('button', { name:'Zoom image out' }).click();
   await page.getByRole('button', { name:'Zoom image out' }).click();
   await expect(page.locator('#imageZoomValue')).toHaveText('90%');
@@ -108,7 +106,6 @@ test('two-finger pinch changes image zoom in both directions', async ({ page }) 
   });
   let value = Number((await page.locator('#imageZoomValue').textContent()).replace('%',''));
   expect(value).toBeGreaterThan(100);
-
   await page.getByRole('button', { name:/reset crop/i }).click();
   await page.evaluate(() => {
     const el=document.getElementById('cropStage');
@@ -121,18 +118,26 @@ test('two-finger pinch changes image zoom in both directions', async ({ page }) 
   expect(value).toBeLessThan(100);
 });
 
-test('contain mode keeps full image preview visible and hides crop adjustments', async ({ page }) => {
+test('contain preview matches requested output canvas and shows padding', async ({ page }) => {
   await page.goto('/resize-image/');
   await uploadTestImage(page);
+  await page.getByRole('button', { name:'1:1' }).click();
   await page.getByText('Contain', { exact:true }).click();
   await expect(page.locator('#cropPanel')).toBeVisible();
   await expect(page.locator('#preview')).toBeVisible();
   await expect(page.locator('#cropOverlay')).toBeHidden();
   await expect(page.getByRole('button', { name:/reset crop/i })).toBeHidden();
   await expect(page.locator('#cropAdjustments')).toBeHidden();
-  await expect(page.locator('#previewTitle')).toHaveText('Image preview');
-  await expect(page.locator('#previewSubtitle')).toContainText('entire image');
-  await expect(page.locator('#cropInfo')).toContainText('Full image 800 × 600 px');
+  await expect(page.locator('#previewTitle')).toHaveText('Final canvas preview');
+  await expect(page.locator('#previewSubtitle')).toContainText('requested aspect ratio');
+  await expect(page.locator('#cropInfo')).toContainText('Preview 800 × 800 px');
+  const canvas = await page.locator('#preview').boundingBox();
+  expect(canvas).toBeTruthy();
+  expect(Math.abs(canvas.width-canvas.height)).toBeLessThan(2);
+  const edgePixel = await page.locator('#preview').evaluate(canvas => Array.from(canvas.getContext('2d').getImageData(10,10,1,1).data));
+  expect(edgePixel[0]).toBe(255);
+  expect(edgePixel[1]).toBe(255);
+  expect(edgePixel[2]).toBe(255);
 });
 
 test('image tool states local processing privacy boundary', async ({ page }) => {
