@@ -1,19 +1,20 @@
 const { test, expect } = require('@playwright/test');
 
 test('touchless counter starts, pauses, changes speed and persists', async ({ page }) => {
+  await page.clock.install();
   await page.goto('/japa-counter/');
   await expect(page.getByText('Touchless Japa Counter')).toBeVisible();
 
   await page.locator('#speed').fill('1');
   await page.getByRole('button', { name: 'Start' }).click();
-  await page.waitForTimeout(1250);
+  await page.clock.fastForward(1250);
 
   const runningCount = Number((await page.locator('#count').innerText()).replaceAll(',', ''));
   expect(runningCount).toBeGreaterThanOrEqual(1);
 
   await page.getByRole('button', { name: 'Pause' }).click();
   const pausedCount = await page.locator('#count').innerText();
-  await page.waitForTimeout(400);
+  await page.clock.fastForward(5000);
   await expect(page.locator('#count')).toHaveText(pausedCount);
 
   await page.reload();
