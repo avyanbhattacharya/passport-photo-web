@@ -1,4 +1,4 @@
-name: Automated browser tests
+name: Quality gates
 
 on:
   push:
@@ -7,39 +7,75 @@ on:
     branches: [main]
 
 concurrency:
-  group: browser-tests-${{ github.ref }}
+  group: quality-gates-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
   contents: read
 
 jobs:
-  test:
+  static:
+    name: Static checks
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 3
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
-
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '24'
+      - name: Run static checks
+        run: node --test tests/static/*.test.js
 
+  chromium:
+    name: Deep Chromium
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
       - name: Install dependencies
         run: npm install
-
-      - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium webkit
-
-      - name: Run browser tests
-        run: npm test
-
-      - name: Upload Playwright report on failure
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Run deep Chromium tests
+        run: npm run test:chromium
+      - name: Upload Chromium report on failure
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-report
+          name: playwright-report-chromium
+          path: playwright-report/
+          if-no-files-found: ignore
+          retention-days: 7
+
+  compatibility:
+    name: WebKit and iPhone smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install dependencies
+        run: npm install
+      - name: Install WebKit
+        run: npx playwright install --with-deps webkit
+      - name: Run compatibility smoke tests
+        run: npm run test:compat
+      - name: Upload compatibility report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-compatibility
           path: playwright-report/
           if-no-files-found: ignore
           retention-days: 7
