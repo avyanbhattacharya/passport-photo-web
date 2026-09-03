@@ -22,7 +22,7 @@
 <header class="topbar"><div class="wrap"><div class="brand"><a href="/">Clean Local Tools</a></div><a class="all-tools" href="/">All tools</a></div></header>
 <main class="wrap">
   <section class="hero"><h1>Compress PDF</h1><p>Reduce PDF size while keeping the best quality practical for your goal.</p></section>
-  <div class="privacy">🔒 <strong>Your files never leave your machine.</strong> Processing happens in your browser. The tool downloads its PDF libraries from a CDN, but your document is not uploaded for processing.</div>
+  <div class="privacy">🔒 <strong>Your files never leave your machine.</strong> This tool works with your PDF right on this device. Nothing is uploaded for processing.</div>
 
   <section class="panel" id="uploadPanel">
     <input id="fileInput" type="file" accept="application/pdf,.pdf" class="hidden">
@@ -53,7 +53,7 @@
     <a class="download" id="downloadLink" href="#" download>Download compressed PDF</a><button class="another" id="anotherButton" type="button">Compress another PDF</button>
   </section>
 
-  <section class="info"><h2>How the compressor protects quality</h2><p>The tool starts with the least destructive approach. Best Quality rewrites the PDF structure without intentionally reducing image quality. Balanced and Smallest Size can render pages to compressed images when stronger size reduction is needed.</p><h3>Target a specific upload limit</h3><p>Enable Target file size for limits such as 2 MB or 500 KB. The browser tries progressively stronger settings and stops at the highest-quality candidate that reaches the target. Exact size cannot be guaranteed because PDFs vary widely.</p><h3>What stays private?</h3><p>Your files never leave your machine. Your selected PDF is read into browser memory and the result is created locally. Third-party JavaScript libraries are fetched by the page, but the PDF itself is not sent to those library hosts for processing.</p></section>
+  <section class="info"><h2>How the compressor protects quality</h2><p>The tool starts with the least destructive approach. Best Quality rewrites the PDF structure without intentionally reducing image quality. Balanced and Smallest Size can render pages to compressed images when stronger size reduction is needed.</p><h3>Target a specific upload limit</h3><p>Enable Target file size for limits such as 2 MB or 500 KB. The browser tries progressively stronger settings and stops at the highest-quality candidate that reaches the target. Exact size cannot be guaranteed because PDFs vary widely.</p><h3>Private by design</h3><p>Your files never leave your machine. Your PDF stays on this device while the smaller copy is created. The page may load helper code from a third-party source, but your file is not sent there for processing.</p></section>
 </main>
 <footer><div class="wrap">© 2026 Clean Local Tools · Your files never leave your machine.</div></footer>
 <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js" crossorigin="anonymous"></script>
