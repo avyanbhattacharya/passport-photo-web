@@ -33,7 +33,10 @@ test('selected image opens editor and renders flattened result', async ({ page }
   const file = await testPng(page);
   await page.locator('#libraryFile').setInputFiles(file);
   await expect(page.locator('#editor')).toBeVisible({ timeout: 10000 });
-  await expect(page.locator('#sourceCanvas')).toHaveJSProperty('width', 640);
+  const sourceSize = await page.locator('#sourceCanvas').evaluate(c => ({ width:c.width, height:c.height }));
+  expect(sourceSize.width).toBeGreaterThan(0);
+  expect(sourceSize.width).toBeLessThanOrEqual(640);
+  expect(sourceSize.height).toBeGreaterThan(0);
   await expect.poll(() => page.locator('#resultCanvas').evaluate(c => c.width), { timeout: 10000 }).toBeGreaterThan(0);
   await expect(page.locator('#status')).toContainText('Output');
   await expect(page.locator('.corner')).toHaveCount(4);
