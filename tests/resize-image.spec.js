@@ -49,23 +49,28 @@ test('fit crop exposes an aspect-locked draggable crop selector', async ({ page 
   expect(Math.abs(reset.x - before.x)).toBeLessThan(3);
 });
 
-test('crop zoom changes selected area while preserving crop aspect ratio', async ({ page }) => {
+test('crop area slider directly changes selected crop area, not image zoom', async ({ page }) => {
   await page.goto('/resize-image/');
   await uploadTestImage(page);
   await page.getByRole('button', { name:'1:1' }).click();
   const overlay = page.locator('#cropOverlay');
-  const before = await overlay.boundingBox();
+  const canvas = page.locator('#preview');
+  const beforeCrop = await overlay.boundingBox();
+  const beforeImage = await canvas.boundingBox();
   await expect(page.locator('#zoomValue')).toHaveText('100%');
-  await page.getByRole('button', { name:'Zoom in' }).click();
-  await expect(page.locator('#zoomValue')).toHaveText('110%');
-  const after = await overlay.boundingBox();
-  expect(after.width).toBeLessThan(before.width);
-  expect(Math.abs(after.width - after.height)).toBeLessThan(3);
-  await page.locator('#zoomRange').fill('200');
-  await expect(page.locator('#zoomValue')).toHaveText('200%');
+  await page.getByRole('button', { name:'Decrease crop area' }).click();
+  await expect(page.locator('#zoomValue')).toHaveText('90%');
+  const smallerCrop = await overlay.boundingBox();
+  const afterImage = await canvas.boundingBox();
+  expect(smallerCrop.width).toBeLessThan(beforeCrop.width);
+  expect(Math.abs(afterImage.width - beforeImage.width)).toBeLessThan(1);
+  expect(Math.abs(afterImage.height - beforeImage.height)).toBeLessThan(1);
+  expect(Math.abs(smallerCrop.width - smallerCrop.height)).toBeLessThan(3);
+  await page.locator('#zoomRange').fill('50');
+  await expect(page.locator('#zoomValue')).toHaveText('50%');
   await expect(page.locator('#cropInfo')).toContainText('Selected 300 × 300 px');
-  await page.getByRole('button', { name:'Zoom out' }).click();
-  await expect(page.locator('#zoomValue')).toHaveText('190%');
+  await page.getByRole('button', { name:'Increase crop area' }).click();
+  await expect(page.locator('#zoomValue')).toHaveText('60%');
   await page.getByRole('button', { name:/reset crop/i }).click();
   await expect(page.locator('#zoomValue')).toHaveText('100%');
 });
