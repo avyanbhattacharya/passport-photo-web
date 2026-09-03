@@ -32,13 +32,17 @@ function appSourceFor(htmlPath) {
   return fs.existsSync(absolute) ? fs.readFileSync(absolute, 'utf8') : '';
 }
 
+function escapeRegex(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 test('all public pages have canonical, indexable, privacy-aware metadata', () => {
   for (const [route, htmlPath, canonical] of pages) {
     const html = read(htmlPath);
     const runtime = appSourceFor(htmlPath);
     const searchable = `${html}\n${runtime}`;
 
-    assert.match(html, new RegExp(`<link[^>]+rel=["']canonical["'][^>]+href=["']${canonical.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}["']`, 'i'), `${route} canonical`);
+    assert.match(html, new RegExp(`<link[^>]+rel=["']canonical["'][^>]+href=["']${escapeRegex(canonical)}["']`, 'i'), `${route} canonical`);
     assert.doesNotMatch(html, /<meta[^>]+name=["']robots["'][^>]+content=["'][^"']*noindex/i, `${route} must remain indexable`);
     assert.ok(searchable.includes(privacy), `${route} privacy tagline`);
     assert.match(searchable, /meta[^\n]{0,300}description[^\n]{0,500}Your files never leave your machine/i, `${route} search description privacy copy`);
@@ -59,7 +63,7 @@ test('homepage links to every public tool route', () => {
   }
 });
 
-test('browser tests avoid fixed sleeps and runaway per-assertion timeouts', () => {
+test('browser tests avoid fixed sleeps and runaway assertion timeouts', () => {
   const testsDir = path.join(root, 'tests');
   const specs = fs.readdirSync(testsDir).filter(name => name.endsWith('.spec.js'));
   for (const spec of specs) {
@@ -80,4 +84,23 @@ test('every tool family keeps a dedicated deep browser spec', () => {
     'qr-code-maker.spec.js'
   ];
   for (const spec of expected) assert.ok(fs.existsSync(path.join(root, 'tests', spec)), `${spec} missing`);
+});
+
+test('CI keeps static, deep Chromium, and compatibility gates separate and bounded', () => {
+  const workflow = read('.github/workflows/tests.yml');
+  const config = read('playwright.config.js');
+  const pkg = JSON.parse(read('package.json'));
+
+  assert.match(workflow, /static:\s*[\s\S]*timeout-minutes:\s*3/);
+  assert.match(workflow, /chromium:\s*[\s\S]*timeout-minutes:\s*8/);
+  assert.match(workflow, /compatibility:\s*[\s\S]*timeout-minutes:\s*6/);
+  assert.ok(workflow.includes('npx playwright install --with-deps chromium'));
+  assert.ok(workflow.includes('npx playwright install --with-deps webkit'));
+  assert.ok(workflow.includes('cancel-in-progress: true'));
+  assert.equal(pkg.scripts['test:static'], 'node --test tests/static/*.test.js');
+  assert.equal(pkg.scripts['test:chromium'], 'playwright test --project=chromium');
+  assert.equal(pkg.scripts['test:compat'], 'playwright test --project=webkit --project=mobile-webkit');
+  assert.ok(config.includes('timeout: 30000'));
+  assert.ok(config.includes("trace: 'on-first-retry'"));
+  assert.ok(config.includes('all-tools-regression\\.spec\\.js'));
 });
