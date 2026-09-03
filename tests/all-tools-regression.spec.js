@@ -35,11 +35,32 @@ for (const [route, heading] of tools) {
     await expect(page.locator('h1').first()).toContainText(heading);
     await expect(page.locator('body')).toContainText('Your files never leave your machine.');
 
-    const metrics = await page.evaluate(() => ({
-      scrollWidth: document.documentElement.scrollWidth,
-      clientWidth: document.documentElement.clientWidth
-    }));
-    expect(metrics.scrollWidth - metrics.clientWidth, `${route} horizontal overflow`).toBeLessThanOrEqual(2);
+    const metrics = await page.evaluate(() => {
+      const clientWidth = document.documentElement.clientWidth;
+      const offenders = [...document.querySelectorAll('body *')]
+        .map(el => {
+          const rect = el.getBoundingClientRect();
+          return {
+            tag: el.tagName.toLowerCase(),
+            id: el.id || '',
+            className: typeof el.className === 'string' ? el.className : '',
+            left: Math.round(rect.left),
+            right: Math.round(rect.right),
+            width: Math.round(rect.width),
+            scrollWidth: el.scrollWidth,
+            clientWidth: el.clientWidth
+          };
+        })
+        .filter(item => item.right > clientWidth + 2 || item.left < -2 || item.scrollWidth > item.clientWidth + 2)
+        .slice(0, 12);
+      return {
+        scrollWidth: document.documentElement.scrollWidth,
+        clientWidth,
+        offenders
+      };
+    });
+    const overflowMessage = `${route} horizontal overflow; offenders=${JSON.stringify(metrics.offenders)}`;
+    expect(metrics.scrollWidth - metrics.clientWidth, overflowMessage).toBeLessThanOrEqual(2);
 
     expect(pageErrors, `page errors on ${route}`).toEqual([]);
     expect(brokenLocal, `broken local assets on ${route}`).toEqual([]);
