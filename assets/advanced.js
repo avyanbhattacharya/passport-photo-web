@@ -142,5 +142,5 @@
     finally{b.disabled=false;b.textContent='Score image quality';}
   });
 
-  if('serviceWorker'in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(e=>console.warn('Service worker registration failed',e)));}
+  if('serviceWorker'in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('../sw.js').catch(e=>console.warn('Service worker registration failed',e)));}
 })();
