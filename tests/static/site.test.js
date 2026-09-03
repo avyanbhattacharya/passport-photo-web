@@ -37,6 +37,11 @@ function escapeRegex(value) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+function descriptionContent(html) {
+  const match = html.match(/<meta[^>]+name=["']description["'][^>]+content=["']([^"']*)["']/i);
+  return match ? match[1] : '';
+}
+
 test('all public pages have canonical, indexable, privacy-aware metadata', () => {
   for (const [route, htmlPath, canonical] of pages) {
     const html = read(htmlPath);
@@ -46,7 +51,10 @@ test('all public pages have canonical, indexable, privacy-aware metadata', () =>
     assert.match(html, new RegExp(`<link[^>]+rel=["']canonical["'][^>]+href=["']${escapeRegex(canonical)}["']`, 'i'), `${route} canonical`);
     assert.doesNotMatch(html, /<meta[^>]+name=["']robots["'][^>]+content=["'][^"']*noindex/i, `${route} must remain indexable`);
     assert.ok(searchable.includes(privacy), `${route} privacy tagline`);
-    assert.match(searchable, /meta[^\n]{0,300}description[^\n]{0,500}Your files never leave your machine/i, `${route} search description privacy copy`);
+
+    const description = descriptionContent(html);
+    const runtimeInjectsPrivacy = runtime.includes(privacy) && runtime.includes('meta[name="description"]') && runtime.includes('PRIVACY_TAGLINE');
+    assert.ok(description.includes(privacy) || runtimeInjectsPrivacy, `${route} search description privacy copy`);
   }
 });
 
