@@ -3,15 +3,16 @@ const { test, expect } = require('@playwright/test');
 test.beforeEach(async ({ page }) => {
   await page.route('https://cdn.jsdelivr.net/**', route => route.abort());
   await page.addInitScript(() => {
-    window.QRCode = {
-      toCanvas: async (canvas, text, options) => {
-        canvas.width = options.width; canvas.height = options.width;
-        const ctx = canvas.getContext('2d');
-        ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = '#000'; ctx.fillRect(0, 0, 16, 16);
-        canvas.dataset.encoded = text;
-      }
-    };
+    function QRCode(el, options) {
+      const canvas = document.createElement('canvas');
+      canvas.width = options.width; canvas.height = options.height;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = '#000'; ctx.fillRect(0, 0, 16, 16);
+      el.appendChild(canvas);
+    }
+    QRCode.CorrectLevel = { L: 1, M: 0, Q: 3, H: 2 };
+    window.QRCode = QRCode;
   });
 });
 
@@ -24,8 +25,9 @@ test('QR maker validates empty input and generates a downloadable PNG', async ({
   await page.locator('#level').selectOption('H');
   await page.locator('#generateBtn').click();
   await expect(page.locator('#result')).toBeVisible();
-  await expect(page.locator('#qrCanvas')).toHaveAttribute('data-encoded', 'https://cleanlocaltools.com/');
-  await expect(page.locator('#qrCanvas')).toHaveJSProperty('width', 256);
+  const canvas = page.locator('#qrOutput canvas');
+  await expect(canvas).toHaveAttribute('data-encoded', 'https://cleanlocaltools.com/');
+  await expect(canvas).toHaveJSProperty('width', 256);
   await expect(page.locator('#download')).toHaveAttribute('download', 'qr-code.png');
   await expect(page.locator('#download')).toHaveAttribute('href', /^data:image\/png/);
 });
