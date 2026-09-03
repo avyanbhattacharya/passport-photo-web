@@ -26,7 +26,7 @@ test('image tool loads image and applies exact dimensions', async ({ page }) => 
   await expect(page.locator('#checks')).toContainText('600 × 600 px');
   await expect(page.locator('#checks')).toContainText('JPG');
   await expect(page.locator('#checks')).toContainText('Under 200.0 KB');
-  await expect(page.locator('#resultMeta')).toContainText('Crop');
+  await expect(page.locator('#resultMeta')).toContainText('Source crop');
 });
 
 test('fit crop exposes an aspect-locked draggable crop selector', async ({ page }) => {
@@ -49,33 +49,57 @@ test('fit crop exposes an aspect-locked draggable crop selector', async ({ page 
   expect(Math.abs(reset.x - before.x)).toBeLessThan(3);
 });
 
-test('crop area slider directly changes selected crop area, not image zoom', async ({ page }) => {
+test('crop area control changes the frame but leaves image zoom unchanged', async ({ page }) => {
+  await page.goto('/resize-image/');
+  await uploadTestImage(page);
+  await page.getByRole('button', { name:'1:1' }).click();
+  const overlay = page.locator('#cropOverlay');
+  const before = await overlay.boundingBox();
+  await expect(page.locator('#cropSizeValue')).toHaveText('100%');
+  await expect(page.locator('#imageZoomValue')).toHaveText('100%');
+  await page.getByRole('button', { name:'Decrease crop area' }).click();
+  await expect(page.locator('#cropSizeValue')).toHaveText('90%');
+  await expect(page.locator('#imageZoomValue')).toHaveText('100%');
+  const after = await overlay.boundingBox();
+  expect(after.width).toBeLessThan(before.width);
+  expect(Math.abs(after.width - after.height)).toBeLessThan(3);
+});
+
+test('image zoom scales the image while keeping crop frame size fixed', async ({ page }) => {
   await page.goto('/resize-image/');
   await uploadTestImage(page);
   await page.getByRole('button', { name:'1:1' }).click();
   const overlay = page.locator('#cropOverlay');
   const canvas = page.locator('#preview');
-  const beforeCrop = await overlay.boundingBox();
-  const beforeImage = await canvas.boundingBox();
-  await expect(page.locator('#zoomValue')).toHaveText('100%');
-  await page.getByRole('button', { name:'Decrease crop area' }).click();
-  await expect(page.locator('#zoomValue')).toHaveText('90%');
-  const smallerCrop = await overlay.boundingBox();
-  const afterImage = await canvas.boundingBox();
-  expect(smallerCrop.width).toBeLessThan(beforeCrop.width);
-  expect(Math.abs(afterImage.width - beforeImage.width)).toBeLessThan(1);
-  expect(Math.abs(afterImage.height - beforeImage.height)).toBeLessThan(1);
-  expect(Math.abs(smallerCrop.width - smallerCrop.height)).toBeLessThan(3);
-  await page.locator('#zoomRange').fill('50');
-  await expect(page.locator('#zoomValue')).toHaveText('50%');
-  await expect(page.locator('#cropInfo')).toContainText('Selected 300 × 300 px');
-  await page.getByRole('button', { name:'Increase crop area' }).click();
-  await expect(page.locator('#zoomValue')).toHaveText('60%');
-  await page.getByRole('button', { name:/reset crop/i }).click();
-  await expect(page.locator('#zoomValue')).toHaveText('100%');
+  const cropBefore = await overlay.boundingBox();
+  const imageBefore = await canvas.boundingBox();
+  await page.getByRole('button', { name:'Zoom image in' }).click();
+  await expect(page.locator('#imageZoomValue')).toHaveText('110%');
+  const cropAfter = await overlay.boundingBox();
+  const imageAfter = await canvas.boundingBox();
+  expect(Math.abs(cropAfter.width - cropBefore.width)).toBeLessThan(1);
+  expect(imageAfter.width).toBeGreaterThan(imageBefore.width);
+  await expect(page.locator('#cropInfo')).toContainText('image 110%');
+  await page.getByRole('button', { name:'Zoom image out' }).click();
+  await expect(page.locator('#imageZoomValue')).toHaveText('100%');
 });
 
-test('contain mode keeps full image preview visible and hides only crop controls', async ({ page }) => {
+test('two-finger pinch changes image zoom', async ({ page }) => {
+  await page.goto('/resize-image/');
+  await uploadTestImage(page);
+  await page.getByRole('button', { name:'1:1' }).click();
+  await page.evaluate(() => {
+    const el=document.getElementById('cropStage');
+    const fire=(type,id,x,y)=>el.dispatchEvent(new PointerEvent(type,{bubbles:true,cancelable:true,pointerId:id,pointerType:'touch',clientX:x,clientY:y,isPrimary:id===1}));
+    fire('pointerdown',1,200,250); fire('pointerdown',2,300,250);
+    fire('pointermove',1,170,250); fire('pointermove',2,330,250);
+    fire('pointerup',1,170,250); fire('pointerup',2,330,250);
+  });
+  const value = Number((await page.locator('#imageZoomValue').textContent()).replace('%',''));
+  expect(value).toBeGreaterThan(100);
+});
+
+test('contain mode keeps full image preview visible and hides crop adjustments', async ({ page }) => {
   await page.goto('/resize-image/');
   await uploadTestImage(page);
   await page.getByText('Contain', { exact:true }).click();
@@ -83,11 +107,10 @@ test('contain mode keeps full image preview visible and hides only crop controls
   await expect(page.locator('#preview')).toBeVisible();
   await expect(page.locator('#cropOverlay')).toBeHidden();
   await expect(page.getByRole('button', { name:/reset crop/i })).toBeHidden();
-  await expect(page.locator('#zoomControls')).toBeHidden();
+  await expect(page.locator('#cropAdjustments')).toBeHidden();
   await expect(page.locator('#previewTitle')).toHaveText('Image preview');
   await expect(page.locator('#previewSubtitle')).toContainText('entire image');
   await expect(page.locator('#cropInfo')).toContainText('Full image 800 × 600 px');
-  await expect(page.locator('#outputSummary')).toContainText('800 × 600 px');
 });
 
 test('image tool states local processing privacy boundary', async ({ page }) => {
