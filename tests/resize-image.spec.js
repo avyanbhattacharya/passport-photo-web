@@ -52,10 +52,12 @@ test('crop frame is fixed by aspect ratio and can be repositioned', async ({ pag
   const before = await overlay.boundingBox();
   expect(before).toBeTruthy();
   expect(Math.abs(before.width - before.height)).toBeLessThan(3);
-  await page.mouse.move(before.x + before.width / 2, before.y + before.height / 2);
-  await page.mouse.down();
-  await page.mouse.move(before.x + before.width / 2 + 40, before.y + before.height / 2);
-  await page.mouse.up();
+  await page.evaluate(() => {
+    const el=document.getElementById('cropOverlay');
+    const r=el.getBoundingClientRect(), x=r.left+r.width/2, y=r.top+r.height/2;
+    const fire=(type,clientX,clientY)=>el.dispatchEvent(new PointerEvent(type,{bubbles:true,cancelable:true,pointerId:1,pointerType:'mouse',clientX,clientY,isPrimary:true,buttons:type==='pointerup'?0:1}));
+    fire('pointerdown',x,y); fire('pointermove',x+40,y); fire('pointerup',x+40,y);
+  });
   const after = await overlay.boundingBox();
   expect(after.x).toBeGreaterThan(before.x);
   expect(Math.abs(after.width - before.width)).toBeLessThan(1);
@@ -142,6 +144,6 @@ test('contain preview matches requested output canvas and shows padding', async 
 
 test('image tool states local processing privacy boundary', async ({ page }) => {
   await page.goto('/resize-image/');
-  await expect(page.locator('.privacy')).toContainText('stays on your device');
+  await expect(page.locator('.privacy')).toContainText('Your files never leave your machine.');
   await expect(page.locator('.privacy')).toContainText('No image-processing server');
 });
