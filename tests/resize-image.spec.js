@@ -49,11 +49,17 @@ test('fit crop exposes an aspect-locked draggable crop selector', async ({ page 
   expect(Math.abs(reset.x - before.x)).toBeLessThan(3);
 });
 
-test('contain mode hides crop selector because the whole image is retained', async ({ page }) => {
+test('contain mode keeps full image preview visible and hides only crop controls', async ({ page }) => {
   await page.goto('/resize-image/');
   await uploadTestImage(page);
   await page.getByText('Contain', { exact:true }).click();
-  await expect(page.locator('#cropPanel')).toBeHidden();
+  await expect(page.locator('#cropPanel')).toBeVisible();
+  await expect(page.locator('#preview')).toBeVisible();
+  await expect(page.locator('#cropOverlay')).toBeHidden();
+  await expect(page.getByRole('button', { name:/reset crop/i })).toBeHidden();
+  await expect(page.locator('#previewTitle')).toHaveText('Image preview');
+  await expect(page.locator('#previewSubtitle')).toContainText('entire image');
+  await expect(page.locator('#cropInfo')).toContainText('Full image 800 × 600 px');
   await expect(page.locator('#outputSummary')).toContainText('800 × 600 px');
 });
 
