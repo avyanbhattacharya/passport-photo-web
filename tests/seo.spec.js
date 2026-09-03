@@ -6,7 +6,8 @@ const pages = [
   ['/japa-counter/', 'https://cleanlocaltools.com/japa-counter/'],
   ['/japa-counter/tap.html', 'https://cleanlocaltools.com/japa-counter/tap.html'],
   ['/compress-pdf/', 'https://cleanlocaltools.com/compress-pdf/'],
-  ['/merge-pdf/', 'https://cleanlocaltools.com/merge-pdf/']
+  ['/merge-pdf/', 'https://cleanlocaltools.com/merge-pdf/'],
+  ['/resize-image/', 'https://cleanlocaltools.com/resize-image/']
 ];
 
 for (const [path, canonical] of pages) {
