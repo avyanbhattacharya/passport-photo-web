@@ -59,17 +59,13 @@ test('corner handles stay aligned with displayed source image', async ({ page })
   const file = await testPng(page);
   await page.locator('#libraryFile').setInputFiles(file);
   await expect(page.locator('#editor')).toBeVisible();
-  const canvas = await page.locator('#sourceCanvas').boundingBox();
-  expect(canvas).toBeTruthy();
-  for (const handle of await page.locator('.corner').all()) {
-    const h = await handle.boundingBox();
-    expect(h).toBeTruthy();
-    const cx = h.x + h.width / 2, cy = h.y + h.height / 2;
-    expect(cx).toBeGreaterThanOrEqual(canvas.x - 2);
-    expect(cx).toBeLessThanOrEqual(canvas.x + canvas.width + 2);
-    expect(cy).toBeGreaterThanOrEqual(canvas.y - 2);
-    expect(cy).toBeLessThanOrEqual(canvas.y + canvas.height + 2);
-  }
+  await expect.poll(async () => page.evaluate(() => {
+    const c=document.getElementById('sourceCanvas').getBoundingClientRect();
+    return [...document.querySelectorAll('.corner')].every(el => {
+      const h=el.getBoundingClientRect(),cx=h.left+h.width/2,cy=h.top+h.height/2;
+      return cx>=c.left-2&&cx<=c.right+2&&cy>=c.top-2&&cy<=c.bottom+2;
+    });
+  })).toBe(true);
 });
 
 test('document editor has no horizontal page overflow on phone-sized viewport', async ({ page }) => {
