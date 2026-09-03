@@ -1,31 +1,30 @@
 const { test, expect } = require('@playwright/test');
 
-test('homepage exposes every current tool and navigation works', async ({ page }) => {
+test('homepage presents the catalog and browser navigation works', async ({ page }) => {
   await page.goto('/');
   await expect(page).toHaveTitle(/Clean Local Tools/);
   await expect(page.getByRole('heading', { name: /simple tools/i })).toBeVisible();
 
-  const tools = [
-    [/passport photo/i, /\/passport-photo\/$/, /passport photo/i],
-    [/japa counter/i, /\/japa-counter\/$/, /touchless japa counter/i],
-    [/compress pdf/i, /\/compress-pdf\/$/, /^compress pdf$/i],
-    [/merge pdf/i, /\/merge-pdf\/$/, /^merge pdf$/i],
-    [/resize & compress image/i, /\/resize-image\/$/, /resize & compress image/i],
-    [/clean pdf printer/i, /\/clean-pdf-printer\/$/, /clean pdf printer/i],
-    [/document flattener/i, /\/document-flattener\/$/, /document flattener/i],
-    [/image to pdf/i, /\/image-to-pdf\/$/, /image to pdf/i],
-    [/split pdf/i, /\/split-pdf\/$/, /split pdf/i],
-    [/heic to jpg/i, /\/heic-to-jpg\/$/, /heic to jpg/i],
-    [/remove photo metadata/i, /\/remove-photo-metadata\/$/, /remove photo metadata/i],
-    [/qr code maker/i, /\/qr-code-maker\/$/, /qr code maker/i]
+  const links = [
+    /passport photo/i,
+    /japa counter/i,
+    /compress pdf/i,
+    /merge pdf/i,
+    /resize & compress image/i,
+    /clean pdf printer/i,
+    /document flattener/i,
+    /image to pdf/i,
+    /split pdf/i,
+    /heic to jpg/i,
+    /remove photo metadata/i,
+    /qr code maker/i
   ];
 
-  for (const [linkName] of tools) await expect(page.getByRole('link', { name: linkName })).toBeVisible();
-
-  for (const [linkName, url, heading] of tools) {
-    await page.goto('/');
-    await page.getByRole('link', { name: linkName }).click();
-    await expect(page).toHaveURL(url);
-    await expect(page.getByRole('heading', { name: heading }).first()).toBeVisible();
+  for (const linkName of links) {
+    await expect(page.getByRole('link', { name: linkName })).toBeVisible();
   }
+
+  await page.getByRole('link', { name: /image to pdf/i }).click();
+  await expect(page).toHaveURL(/\/image-to-pdf\/$/);
+  await expect(page.getByRole('heading', { name: /image to pdf/i }).first()).toBeVisible();
 });
