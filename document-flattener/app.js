@@ -1,6 +1,6 @@
 const $=id=>document.getElementById(id),src=$('sourceCanvas'),out=$('resultCanvas'),box=$('sourceBox');let img=null,pts=[],mode='original',drag=-1,fullCanvas=document.createElement('canvas');
 async function openFile(f){if(!f)return;$('error').textContent='Opening photo…';try{img=await createImageBitmap(f);fullCanvas.width=img.width;fullCanvas.height=img.height;fullCanvas.getContext('2d').drawImage(img,0,0);const available=Math.max(260,Math.min(720,document.documentElement.clientWidth-32)),s=Math.min(1,available/img.width);src.width=Math.round(img.width*s);src.height=Math.round(img.height*s);src.getContext('2d').drawImage(img,0,0,src.width,src.height);reset();$('editor').hidden=false;$('error').textContent='';requestAnimationFrame(update)}catch(e){$('error').textContent='This image could not be opened. Try JPG, PNG or WebP.'}}
-$('cameraFile').addEventListener('change',e=>openFile(e.target.files[0]));$('libraryFile').addEventListener('change',e=>openFile(e.target.files[0]));
+$('libraryFile').addEventListener('change',e=>openFile(e.target.files[0]));
 function reset(){const m=.07;pts=[[m,m],[1-m,m],[1-m,1-m],[m,1-m]]}
 function handles(){const r=src.getBoundingClientRect(),br=box.getBoundingClientRect(),w=r.width,h=r.height,ox=r.left-br.left,oy=r.top-br.top;document.querySelectorAll('.corner').forEach((el,i)=>{el.style.left=`${ox+pts[i][0]*w}px`;el.style.top=`${oy+pts[i][1]*h}px`})}
 function dist(a,b){return Math.hypot(a[0]-b[0],a[1]-b[1])}
