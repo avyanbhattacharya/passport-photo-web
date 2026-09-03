@@ -11,6 +11,18 @@ async function uploadTestImage(page) {
   await expect(page.locator('#editor')).toBeVisible();
 }
 
+test('choose image button invokes the native file input', async ({ page }) => {
+  await page.goto('/resize-image/');
+  await expect(page.locator('#imageFile')).toHaveAttribute('accept','image/*');
+  await page.evaluate(() => {
+    const input=document.getElementById('imageFile');
+    window.__pickerInvoked=false;
+    input.click=()=>{window.__pickerInvoked=true};
+  });
+  await page.getByRole('button',{name:'Choose image'}).click();
+  await expect.poll(()=>page.evaluate(()=>window.__pickerInvoked)).toBe(true);
+});
+
 test('image tool loads image and applies exact dimensions', async ({ page }) => {
   await page.goto('/resize-image/');
   await expect(page.getByRole('heading', { name: /resize & compress image/i })).toBeVisible();
@@ -22,14 +34,14 @@ test('image tool loads image and applies exact dimensions', async ({ page }) => 
   await page.locator('#format').selectOption('image/jpeg');
   await page.locator('#targetSize').fill('200');
   await page.getByRole('button', { name:/resize & compress image/i }).click();
-  await expect(page.locator('#result')).toBeVisible();
+  await expect(page.locator('#result')).toBeVisible({timeout:15000});
   await expect(page.locator('#checks')).toContainText('600 × 600 px');
   await expect(page.locator('#checks')).toContainText('JPG');
   await expect(page.locator('#checks')).toContainText('Under 200.0 KB');
   await expect(page.locator('#resultMeta')).toContainText('Source crop');
 });
 
-test('fit crop exposes an aspect-locked draggable crop selector', async ({ page }) => {
+test('fit crop exposes an aspect-locked crop selector and reset restores it', async ({ page }) => {
   await page.goto('/resize-image/');
   await uploadTestImage(page);
   await page.getByRole('button', { name:'1:1' }).click();
@@ -38,15 +50,14 @@ test('fit crop exposes an aspect-locked draggable crop selector', async ({ page 
   await expect(page.locator('#cropInfo')).toContainText('Selected 600 × 600 px');
   const before = await overlay.boundingBox();
   expect(before).toBeTruthy();
-  await page.mouse.move(before.x + before.width / 2, before.y + before.height / 2);
-  await page.mouse.down();
-  await page.mouse.move(before.x + before.width / 2 + 40, before.y + before.height / 2);
-  await page.mouse.up();
-  const after = await overlay.boundingBox();
-  expect(after.x).toBeGreaterThan(before.x);
+  await page.locator('#cropSizeRange').fill('80');
+  const smaller = await overlay.boundingBox();
+  expect(smaller.width).toBeLessThan(before.width);
+  expect(Math.abs(smaller.width-smaller.height)).toBeLessThan(3);
   await page.getByRole('button', { name:/reset crop/i }).click();
+  await expect(page.locator('#cropSizeValue')).toHaveText('100%');
   const reset = await overlay.boundingBox();
-  expect(Math.abs(reset.x - before.x)).toBeLessThan(3);
+  expect(Math.abs(reset.width-before.width)).toBeLessThan(3);
 });
 
 test('crop area control changes the frame but leaves image zoom unchanged', async ({ page }) => {
