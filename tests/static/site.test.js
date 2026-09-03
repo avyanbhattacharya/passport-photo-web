@@ -95,7 +95,7 @@ test('every tool family keeps a dedicated deep browser spec', () => {
   for (const spec of expected) assert.ok(fs.existsSync(path.join(root, 'tests', spec)), `${spec} missing`);
 });
 
-test('CI keeps static, deep Chromium, and compatibility gates separate and bounded', () => {
+test('CI keeps bounded, self-diagnosing static, Chromium, and compatibility gates', () => {
   const workflow = read('.github/workflows/tests.yml');
   const config = read('playwright.config.js');
   const pkg = JSON.parse(read('package.json'));
@@ -106,9 +106,15 @@ test('CI keeps static, deep Chromium, and compatibility gates separate and bound
   assert.ok(workflow.includes('npx playwright install --with-deps chromium'));
   assert.ok(workflow.includes('npx playwright install --with-deps webkit'));
   assert.ok(workflow.includes('cancel-in-progress: true'));
+  for (const stepName of ['Site metadata and catalog', 'Test architecture and hygiene', 'Core and Japa deep tests', 'PDF deep tests', 'Image and catalog deep tests', 'Desktop WebKit smoke', 'iPhone WebKit smoke']) {
+    assert.ok(workflow.includes(`name: ${stepName}`), `missing diagnostic step ${stepName}`);
+  }
   assert.equal(pkg.scripts['test:static'], 'node --test tests/static/*.test.js');
-  assert.equal(pkg.scripts['test:chromium'], 'playwright test --project=chromium');
-  assert.equal(pkg.scripts['test:compat'], 'playwright test --project=webkit --project=mobile-webkit');
+  assert.ok(pkg.scripts['test:chromium:core']);
+  assert.ok(pkg.scripts['test:chromium:pdf']);
+  assert.ok(pkg.scripts['test:chromium:image']);
+  assert.ok(pkg.scripts['test:compat:webkit']);
+  assert.ok(pkg.scripts['test:compat:mobile']);
   assert.ok(config.includes('timeout: 30000'));
   assert.ok(config.includes("trace: 'on-first-retry'"));
   assert.ok(config.includes('all-tools-regression\\.spec\\.js'));
