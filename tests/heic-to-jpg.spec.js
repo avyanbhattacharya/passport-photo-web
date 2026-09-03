@@ -30,3 +30,12 @@ test('HEIC converter switches to PNG and rejects unrelated files', async ({ page
   await page.locator('#convertBtn').click();
   await expect(page.locator('.download-row a')).toHaveAttribute('download', 'photo.png');
 });
+
+test('HEIC converter stays within an iPhone-width viewport after selecting a file', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/heic-to-jpg/');
+  await page.locator('#heicFiles').setInputFiles({ name: 'a-very-long-iphone-photo-name-that-must-not-expand-the-page.heic', mimeType: 'image/heic', buffer: Buffer.from('fake-heic') });
+  await expect(page.locator('#editor')).toBeVisible();
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  expect(overflow).toBeLessThanOrEqual(1);
+});
