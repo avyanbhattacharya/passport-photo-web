@@ -6,15 +6,16 @@
 <meta name="robots" content="noindex,nofollow">
 <title>Local AI Foundation Lab | Clean Local Tools</title>
 <style>
-:root{font-family:Arial,Helvetica,sans-serif;color:#202124;background:#fff}*{box-sizing:border-box}body{margin:0}.wrap{width:min(760px,calc(100% - 32px));margin:48px auto}.card{border:1px solid #dadce0;border-radius:14px;padding:22px;margin-top:18px}.status{font-weight:700}.muted{color:#5f6368;line-height:1.55}.ok{background:#f5f8ff;border-color:#e8f0fe}button{border:0;border-radius:8px;background:#1a73e8;color:#fff;padding:11px 16px;font-weight:700;cursor:pointer}pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:13px}</style>
+:root{font-family:Arial,Helvetica,sans-serif;color:#202124;background:#fff}*{box-sizing:border-box}body{margin:0}.wrap{width:min(760px,calc(100% - 32px));margin:48px auto}.card{border:1px solid #dadce0;border-radius:14px;padding:22px;margin-top:18px}.status{font-weight:700}.muted{color:#5f6368;line-height:1.55}.ok{background:#f5f8ff;border-color:#e8f0fe}button,.file-label{display:inline-flex;align-items:center;justify-content:center;border:0;border-radius:8px;background:#1a73e8;color:#fff;padding:11px 16px;font-weight:700;cursor:pointer}.file-label{margin-right:8px}.file-input{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}button:disabled{opacity:.5;cursor:not-allowed}pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:13px}.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.selected{font-size:13px;color:#5f6368;margin-top:10px}@media(max-width:520px){.wrap{margin:28px auto}.card{padding:18px}.row{align-items:stretch}.row button,.row .file-label{width:100%;margin:0}}
+</style>
 </head>
 <body>
 <main class="wrap">
 <h1>Local AI Foundation Lab</h1>
-<p class="muted">A private engineering probe for browser-local AI. It tests WebGPU when available and falls back to local CPU JavaScript when it is not.</p>
-<div class="card ok"><strong>🔒 Your files never leave your machine.</strong><p class="muted">This lab sends no model input to a server.</p></div>
-<div class="card"><div>Backend: <span id="backend" class="status">Checking…</span></div><div>Reason: <span id="reason">Checking…</span></div><div>Model: <span id="model">Checking…</span></div></div>
-<div class="card"><button id="run" type="button">Run local inference</button><pre id="result" aria-live="polite">Not run yet.</pre></div>
+<p class="muted">A private engineering probe for browser-local AI. It tests GPU acceleration when available and keeps local fallbacks behind the same model interface.</p>
+<div class="card ok"><strong>🔒 Your files never leave your machine.</strong><p class="muted">Model code and weights may be downloaded from third-party hosting on first use. The image you choose is passed to the model inside this browser and is not uploaded for inference.</p></div>
+<div class="card"><h2>Foundation compute probe</h2><div>Backend: <span id="backend" class="status">Checking…</span></div><div>Reason: <span id="reason">Checking…</span></div><div>Model: <span id="model">Checking…</span></div><p class="muted">This tiny deterministic model validates our worker, WebGPU and CPU fallback plumbing without downloading a large model.</p><button id="run" type="button">Run foundation inference</button><pre id="result" aria-live="polite">Not run yet.</pre></div>
+<div class="card"><h2>Real pretrained vision model</h2><div>Model: <span id="visionModel" class="status">Checking…</span></div><div>Preferred backend: <span id="visionPreferred">Checking…</span></div><div>Fallback: <span id="visionFallback">Checking…</span></div><p class="muted">Experimental MobileNetV4 image classification through a pinned Transformers.js adapter. WebGPU is preferred; WASM is the local fallback. The first run downloads model/runtime assets and can take noticeably longer.</p><div class="row"><label class="file-label" for="visionFile">Choose image</label><input class="file-input" id="visionFile" type="file" accept="image/*"><button id="classify" type="button" disabled>Classify locally</button></div><div class="selected" id="selected">No image selected.</div><pre id="visionResult" aria-live="polite">Not run yet.</pre></div>
 </main>
 <script src="/assets/local-ai/client.js"></script>
 <script>
@@ -23,9 +24,19 @@ const backend=document.getElementById('backend');
 const reason=document.getElementById('reason');
 const model=document.getElementById('model');
 const result=document.getElementById('result');
-async function loadStatus(){try{const status=await client.status();backend.textContent=status.backend;reason.textContent=status.reason;model.textContent=status.model;}catch(error){backend.textContent='error';reason.textContent=error.message;}}
+const visionModel=document.getElementById('visionModel');
+const visionPreferred=document.getElementById('visionPreferred');
+const visionFallback=document.getElementById('visionFallback');
+const visionFile=document.getElementById('visionFile');
+const classify=document.getElementById('classify');
+const selected=document.getElementById('selected');
+const visionResult=document.getElementById('visionResult');
+let selectedImage=null;
+async function loadStatus(){try{const status=await client.status();backend.textContent=status.backend;reason.textContent=status.reason;model.textContent=status.model;}catch(error){backend.textContent='error';reason.textContent=error.message;}try{const status=await client.visionStatus();visionModel.textContent=status.model;visionPreferred.textContent=status.preferredBackend;visionFallback.textContent=status.fallbackBackend;}catch(error){visionModel.textContent='error';visionPreferred.textContent='unavailable';visionFallback.textContent=error.message;}}
 async function run(){result.textContent='Running…';try{const output=await client.infer([0.2,0.4,0.6,0.8]);result.textContent=JSON.stringify({backend:output.backend,model:output.model,probabilities:output.probabilities},null,2);}catch(error){result.textContent=`Error: ${error.message}`;}}
-document.getElementById('run').addEventListener('click',run);loadStatus();window.addEventListener('pagehide',()=>client.close(),{once:true});
+visionFile.addEventListener('change',()=>{selectedImage=visionFile.files&&visionFile.files[0]?visionFile.files[0]:null;classify.disabled=!selectedImage;selected.textContent=selectedImage?`${selectedImage.name} · ${(selectedImage.size/1024).toFixed(1)} KB`:'No image selected.';visionResult.textContent='Not run yet.';});
+async function classifyImage(){if(!selectedImage)return;classify.disabled=true;visionResult.textContent='Loading model and classifying locally…';try{const output=await client.classifyImage(selectedImage,{topK:5});visionResult.textContent=JSON.stringify({backend:output.backend,model:output.model,fallbackReason:output.fallbackReason,predictions:output.predictions},null,2);}catch(error){visionResult.textContent=`Error: ${error.message}`;}finally{classify.disabled=false;}}
+document.getElementById('run').addEventListener('click',run);classify.addEventListener('click',classifyImage);loadStatus();window.addEventListener('pagehide',()=>client.close(),{once:true});
 </script>
 </body>
 </html>
