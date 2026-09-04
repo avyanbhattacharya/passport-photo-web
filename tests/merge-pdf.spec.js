@@ -5,7 +5,7 @@ const fs = require('fs');
 test('merges two PDFs in chosen order and downloads the result', async ({ page }) => {
   await page.goto('/merge-pdf/');
   await expect(page.getByRole('heading', { name: /^merge pdf$/i })).toBeVisible();
-  await expect(page.getByText(/processed in this browser/i)).toBeVisible();
+  await expect(page.getByText(/nothing is uploaded for processing/i).first()).toBeVisible();
 
   const first = path.join(__dirname, 'fixtures', 'sample.pdf');
   const second = path.join(__dirname, 'fixtures', 'sample-2.pdf');
