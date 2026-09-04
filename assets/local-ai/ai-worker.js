@@ -1,20 +1,8 @@
-importScripts('./webgpu-runtime.js');
+importScripts('./webgpu-runtime.js', './async-utils.js');
 
 const WEBGPU_INIT_TIMEOUT_MS = 2500;
 let runtimePromise = null;
 let runtimeState = { backend: 'cpu-js', reason: 'not-initialized', capabilities: {} };
-
-function withTimeout(promise, timeoutMs, code) {
-  let timer;
-  const timeout = new Promise((_, reject) => {
-    timer = setTimeout(() => {
-      const error = new Error(code);
-      error.code = code;
-      reject(error);
-    }, timeoutMs);
-  });
-  return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
-}
 
 async function initialize() {
   if (runtimePromise) return runtimePromise;
@@ -25,7 +13,7 @@ async function initialize() {
       return runtimeState;
     }
     try {
-      const runtime = await withTimeout(
+      const runtime = await LocalAIAsync.withTimeout(
         LocalAIWebGPU.createRuntime({ navigatorLike: navigator, secureContext: self.isSecureContext }),
         WEBGPU_INIT_TIMEOUT_MS,
         'webgpu-initialization-timeout'
