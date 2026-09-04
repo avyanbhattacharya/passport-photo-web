@@ -1,6 +1,7 @@
-importScripts('./webgpu-runtime.js', './async-utils.js');
+importScripts('./webgpu-runtime.js', './async-utils.js', './model-adapter.js');
 
 const WEBGPU_INIT_TIMEOUT_MS = 2500;
+const modelAdapter = LocalAIModelAdapter.createFoundationAdapter();
 let runtimePromise = null;
 let runtimeState = { backend: 'cpu-js', reason: 'not-initialized', capabilities: {} };
 
@@ -37,13 +38,12 @@ async function infer(input) {
   const state = await initialize();
   if (state.backend === 'webgpu') {
     try {
-      const result = await LocalAIWebGPU.inferWebGPU(state.runtime.device, input);
-      return { backend: 'webgpu', ...result };
+      return await modelAdapter.infer(input, { backend: 'webgpu', device: state.runtime.device });
     } catch (error) {
       runtimeState = { backend: 'cpu-js', reason: error.message || 'webgpu-inference-failed', capabilities: state.capabilities };
     }
   }
-  return { backend: 'cpu-js', ...LocalAIWebGPU.inferCPU(input) };
+  return modelAdapter.infer(input, { backend: 'cpu-js' });
 }
 
 self.onmessage = async event => {
@@ -52,12 +52,24 @@ self.onmessage = async event => {
   try {
     if (message.type === 'status') {
       const state = await initialize();
-      self.postMessage({ id, ok: true, type: 'status', backend: state.backend, reason: state.reason, capabilities: state.capabilities, version: LocalAIWebGPU.VERSION, model: LocalAIWebGPU.MODEL.id });
+      self.postMessage({
+        id,
+        ok: true,
+        type: 'status',
+        backend: state.backend,
+        reason: state.reason,
+        capabilities: state.capabilities,
+        version: LocalAIWebGPU.VERSION,
+        adapterVersion: LocalAIModelAdapter.VERSION,
+        model: modelAdapter.model.id,
+        task: modelAdapter.model.task,
+        localOnly: modelAdapter.model.localOnly
+      });
       return;
     }
     if (message.type === 'infer') {
       const result = await infer(message.input);
-      self.postMessage({ id, ok: true, type: 'infer', ...result, model: LocalAIWebGPU.MODEL.id });
+      self.postMessage({ id, ok: true, type: 'infer', ...result, task: modelAdapter.model.task, localOnly: modelAdapter.model.localOnly });
       return;
     }
     throw new Error('unknown-worker-message');
