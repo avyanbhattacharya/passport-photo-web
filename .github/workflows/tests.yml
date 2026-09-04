@@ -29,6 +29,8 @@ jobs:
         run: npm run test:static:site
       - name: Test architecture and hygiene
         run: npm run test:static:hygiene
+      - name: Local AI foundation
+        run: npm run test:static:local-ai
 
   chromium:
     name: Deep Chromium
@@ -54,7 +56,7 @@ jobs:
       - name: Install Chromium browser on cache miss
         if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: npx playwright install chromium
-      - name: Core and Japa deep tests
+      - name: Core, Japa, and local AI deep tests
         run: npm run test:chromium:core
       - name: PDF deep tests
         run: npm run test:chromium:pdf
