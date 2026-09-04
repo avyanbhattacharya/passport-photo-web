@@ -71,6 +71,14 @@ Cross-browser smoke is intentionally narrower than Chromium deep coverage.
 
 A passing Playwright WebKit run is not a claim that every physical Safari device/GPU combination has been tested.
 
+## Layer 4: physical hardware preview testing
+
+Some capabilities, especially WebGPU-backed AI, require evidence from real devices. The project therefore supports an isolated branch-preview lane where testers need only a public HTTPS URL, not repository access.
+
+The detailed process, privacy contract, report schema, and first WebGPU milestone are documented in [Hardware Preview Testing](hardware-preview-testing.md).
+
+Physical preview reports are evidence about the specific tested browser/device combination. They do not automatically create a universal production support claim.
+
 ## Browser test topology
 
 The project uses Playwright rather than duplicating the entire suite across multiple E2E frameworks.
