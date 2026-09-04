@@ -1,7 +1,7 @@
 const { test, expect } = require('@playwright/test');
 
 const tools = [
-  ['/', /Clean Local Tools|Simple tools/i],
+  ['/', /Useful file tools/i],
   ['/passport-photo/', /Passport Photo/i],
   ['/japa-counter/', /Japa Counter/i],
   ['/japa-counter/tap.html', /Japa Counter/i],
