@@ -6,6 +6,7 @@
       const opts = options || {};
       this.workerUrl = opts.workerUrl || '/assets/local-ai/ai-worker.js';
       this.timeoutMs = opts.timeoutMs || 15000;
+      this.modelTimeoutMs = opts.modelTimeoutMs || 120000;
       this.nextId = 1;
       this.pending = new Map();
       this.worker = new Worker(this.workerUrl);
@@ -28,13 +29,14 @@
       };
     }
 
-    request(type, payload) {
+    request(type, payload, timeoutMs) {
       const id = this.nextId++;
+      const requestTimeout = timeoutMs || this.timeoutMs;
       return new Promise((resolve, reject) => {
         const timer = setTimeout(() => {
           this.pending.delete(id);
           reject(new Error(`local-ai-worker-timeout:${type}`));
-        }, this.timeoutMs);
+        }, requestTimeout);
         this.pending.set(id, { resolve, reject, timer });
         this.worker.postMessage({ id, type, ...(payload || {}) });
       });
@@ -46,6 +48,16 @@
 
     infer(input) {
       return this.request('infer', { input });
+    }
+
+    visionStatus() {
+      return this.request('vision-status');
+    }
+
+    classifyImage(image, options) {
+      if (!image || typeof image.arrayBuffer !== 'function') return Promise.reject(new TypeError('classifyImage requires an image File or Blob.'));
+      const opts = options || {};
+      return this.request('classify-image', { image, topK: opts.topK || 5 }, opts.timeoutMs || this.modelTimeoutMs);
     }
 
     close() {
