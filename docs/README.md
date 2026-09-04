@@ -20,9 +20,10 @@ The intended product direction is private, local-first software that runs primar
 4. [Architecture Overview](03-architecture/architecture-overview.md)
 5. [High-Level Design](03-architecture/hld.md)
 6. [Low-Level Design](03-architecture/lld.md)
-7. [Testing Architecture and Strategy](04-testing/testing-architecture-and-strategy.md)
-8. [Test Results](04-testing/test-results.md)
-9. [Adding a New Tool](05-development/adding-a-new-tool.md)
+7. [Local AI Models](03-architecture/local-ai-models.md)
+8. [Testing Architecture and Strategy](04-testing/testing-architecture-and-strategy.md)
+9. [Test Results](04-testing/test-results.md)
+10. [Adding a New Tool](05-development/adding-a-new-tool.md)
 
 ## Documentation rules
 
