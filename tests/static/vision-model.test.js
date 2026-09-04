@@ -13,6 +13,12 @@ test('vision model metadata is pinned, local-only, and explicit about first-use 
   assert.equal(vision.MODEL.fallbackBackend, 'wasm');
 });
 
+test('WebGPU preflight requires an actual adapter, not merely navigator.gpu', async () => {
+  assert.deepEqual(await vision.probeWebGPU({}, true), { usable: false, reason: 'webgpu-unavailable' });
+  assert.deepEqual(await vision.probeWebGPU({ gpu: { async requestAdapter() { return null; } } }, true), { usable: false, reason: 'webgpu-adapter-unavailable' });
+  assert.deepEqual(await vision.probeWebGPU({ gpu: { async requestAdapter() { return { name: 'adapter' }; } } }, true), { usable: true, reason: 'available' });
+});
+
 test('vision adapter prefers WebGPU and passes the local Blob directly to the pipeline', async () => {
   const calls = [];
   const image = new Blob(['fake-image'], { type: 'image/jpeg' });
@@ -28,7 +34,7 @@ test('vision adapter prefers WebGPU and passes the local Blob directly to the pi
   };
   const adapter = vision.createVisionAdapter({
     moduleLoader: async () => fakeModule,
-    navigatorLike: { gpu: { requestAdapter() {} } },
+    navigatorLike: { gpu: { async requestAdapter() { return { name: 'test-adapter' }; } } },
     secureContext: true
   });
   const result = await adapter.classify(image, { topK: 2 });
@@ -58,6 +64,26 @@ test('vision adapter initializes WASM directly when WebGPU is unavailable', asyn
   assert.equal(result.fallbackReason, 'webgpu-unavailable');
 });
 
+test('vision adapter avoids poisoning the model runtime when WebGPU API exists but adapter is unavailable', async () => {
+  const loads = [];
+  const fakeModule = {
+    env: {},
+    async pipeline(task, model, options) {
+      loads.push(options.device);
+      return async () => [{ label: 'paper', score: 0.6 }];
+    }
+  };
+  const adapter = vision.createVisionAdapter({
+    moduleLoader: async () => fakeModule,
+    navigatorLike: { gpu: { async requestAdapter() { return null; } } },
+    secureContext: true
+  });
+  const result = await adapter.classify(new Blob(['x'], { type: 'image/png' }));
+  assert.deepEqual(loads, ['wasm']);
+  assert.equal(result.backend, 'wasm');
+  assert.equal(result.fallbackReason, 'webgpu-adapter-unavailable');
+});
+
 test('vision adapter falls back to WASM when WebGPU model initialization fails', async () => {
   const loads = [];
   const fakeModule = {
@@ -70,7 +96,7 @@ test('vision adapter falls back to WASM when WebGPU model initialization fails',
   };
   const adapter = vision.createVisionAdapter({
     moduleLoader: async () => fakeModule,
-    navigatorLike: { gpu: { requestAdapter() {} } },
+    navigatorLike: { gpu: { async requestAdapter() { return { name: 'test-adapter' }; } } },
     secureContext: true
   });
   const result = await adapter.classify(new Blob(['x'], { type: 'image/png' }));
@@ -91,7 +117,7 @@ test('vision adapter retries on WASM if WebGPU inference fails after loading', a
   };
   const adapter = vision.createVisionAdapter({
     moduleLoader: async () => fakeModule,
-    navigatorLike: { gpu: { requestAdapter() {} } },
+    navigatorLike: { gpu: { async requestAdapter() { return { name: 'test-adapter' }; } } },
     secureContext: true
   });
   const result = await adapter.classify(new Blob(['x'], { type: 'image/jpeg' }));
