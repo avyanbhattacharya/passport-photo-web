@@ -1,5 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
 const runtime = require('../../assets/local-ai/webgpu-runtime.js');
 const asyncUtils = require('../../assets/local-ai/async-utils.js');
 
@@ -76,4 +78,47 @@ test('async timeout utility resolves fast work and rejects stalled initializatio
   assert.equal(await asyncUtils.withTimeout(Promise.resolve('ready'), 50, 'timeout'), 'ready');
   const never = new Promise(() => {});
   await assert.rejects(asyncUtils.withTimeout(never, 5, 'webgpu-initialization-timeout'), error => error.code === 'webgpu-initialization-timeout');
+});
+
+test('human and AI handbook keeps the durable project foundations present and linked', () => {
+  const root = path.resolve(__dirname, '../..');
+  const required = [
+    'docs/README.md',
+    'docs/01-purpose/mission-and-vision.md',
+    'docs/01-purpose/principles.md',
+    'docs/01-purpose/project-continuity.md',
+    'docs/03-architecture/architecture-overview.md',
+    'docs/03-architecture/hld.md',
+    'docs/03-architecture/lld.md',
+    'docs/04-testing/testing-architecture-and-strategy.md',
+    'docs/04-testing/test-results.md',
+    'docs/05-development/adding-a-new-tool.md'
+  ];
+  for (const relative of required) assert.ok(fs.existsSync(path.join(root, relative)), `${relative} should exist`);
+
+  const index = fs.readFileSync(path.join(root, 'docs/README.md'), 'utf8');
+  for (const relative of required.slice(1)) {
+    const fromDocs = relative.replace(/^docs\//, '');
+    assert.match(index, new RegExp(fromDocs.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')), `${relative} should be linked from docs/README.md`);
+  }
+
+  const mission = fs.readFileSync(path.join(root, 'docs/01-purpose/mission-and-vision.md'), 'utf8');
+  assert.match(mission, /Democratize useful digital tools/i);
+  assert.match(mission, /Your files never leave your machine/);
+  assert.match(mission, /Offline is an earned property/);
+
+  const principles = fs.readFileSync(path.join(root, 'docs/01-purpose/principles.md'), 'utf8');
+  assert.match(principles, /No advertising as a product dependency/);
+  assert.match(principles, /No unnecessary accounts/);
+  assert.match(principles, /Privacy is architecture/);
+
+  const continuity = fs.readFileSync(path.join(root, 'docs/01-purpose/project-continuity.md'), 'utf8');
+  assert.match(continuity, /should not depend on the continued involvement of its founder/i);
+  assert.match(continuity, /baseline\/clean-local-tools-ci-v1/);
+
+  const testing = fs.readFileSync(path.join(root, 'docs/04-testing/testing-architecture-and-strategy.md'), 'utf8');
+  assert.match(testing, /Every meaningful production change/);
+  assert.match(testing, /Chromium/);
+  assert.match(testing, /WebKit/);
+  assert.match(testing, /privacy regression testing/i);
 });
