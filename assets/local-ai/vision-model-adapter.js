@@ -5,7 +5,7 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function () {
   'use strict';
 
-  const VERSION = '0.1.0';
+  const VERSION = '0.2.0';
   const TRANSFORMERS_VERSION = '3.8.1';
   const TRANSFORMERS_MODULE_URL = `https://cdn.jsdelivr.net/npm/@huggingface/transformers@${TRANSFORMERS_VERSION}`;
   const MODEL = Object.freeze({
@@ -24,6 +24,30 @@
   function supportsWebGPU(navigatorLike, secureContext) {
     const nav = navigatorLike || null;
     return secureContext !== false && !!(nav && nav.gpu && typeof nav.gpu.requestAdapter === 'function');
+  }
+
+  async function probeWebGPU(navigatorLike, secureContext, timeoutMs) {
+    if (!supportsWebGPU(navigatorLike, secureContext)) {
+      return { usable: false, reason: secureContext === false ? 'secure-context-required' : 'webgpu-unavailable' };
+    }
+    const waitMs = Math.max(100, Number(timeoutMs || 2000));
+    let timer;
+    try {
+      const timeout = new Promise(resolve => {
+        timer = setTimeout(() => resolve({ timedOut: true }), waitMs);
+      });
+      const adapterAttempt = Promise.resolve()
+        .then(() => navigatorLike.gpu.requestAdapter({ powerPreference: 'high-performance' }))
+        .then(adapter => ({ adapter }))
+        .catch(error => ({ error }));
+      const result = await Promise.race([adapterAttempt, timeout]);
+      if (result && result.timedOut) return { usable: false, reason: 'webgpu-adapter-timeout' };
+      if (result && result.error) return { usable: false, reason: result.error.message || 'webgpu-adapter-failed' };
+      if (!result || !result.adapter) return { usable: false, reason: 'webgpu-adapter-unavailable' };
+      return { usable: true, reason: 'available' };
+    } finally {
+      clearTimeout(timer);
+    }
   }
 
   async function defaultModuleLoader(url) {
@@ -51,6 +75,7 @@
     const navigatorLike = Object.prototype.hasOwnProperty.call(opts, 'navigatorLike') ? opts.navigatorLike : (typeof navigator !== 'undefined' ? navigator : null);
     const secureContext = Object.prototype.hasOwnProperty.call(opts, 'secureContext') ? opts.secureContext : (typeof isSecureContext === 'boolean' ? isSecureContext : true);
     const preferWebGPU = opts.preferWebGPU !== false;
+    const webGPUProbeTimeoutMs = opts.webGPUProbeTimeoutMs || 2000;
     const modelId = opts.modelId || MODEL.id;
     let modulePromise = null;
     let classifierPromise = null;
@@ -78,15 +103,19 @@
     async function getClassifier() {
       if (classifierPromise) return classifierPromise;
       classifierPromise = (async () => {
-        const canUseGPU = preferWebGPU && supportsWebGPU(navigatorLike, secureContext);
-        if (canUseGPU) {
-          try {
-            return await buildPipeline('webgpu');
-          } catch (error) {
-            lastFallbackReason = error && (error.message || error.code) ? (error.message || error.code) : 'webgpu-model-initialization-failed';
+        if (preferWebGPU) {
+          const probe = await probeWebGPU(navigatorLike, secureContext, webGPUProbeTimeoutMs);
+          if (probe.usable) {
+            try {
+              return await buildPipeline('webgpu');
+            } catch (error) {
+              lastFallbackReason = error && (error.message || error.code) ? (error.message || error.code) : 'webgpu-model-initialization-failed';
+            }
+          } else {
+            lastFallbackReason = probe.reason;
           }
         } else {
-          lastFallbackReason = secureContext === false ? 'secure-context-required' : 'webgpu-unavailable';
+          lastFallbackReason = 'webgpu-disabled';
         }
         return buildPipeline('wasm');
       })();
@@ -146,5 +175,5 @@
     });
   }
 
-  return Object.freeze({ VERSION, MODEL, TRANSFORMERS_VERSION, TRANSFORMERS_MODULE_URL, supportsWebGPU, validateImageInput, normalizePredictions, createVisionAdapter });
+  return Object.freeze({ VERSION, MODEL, TRANSFORMERS_VERSION, TRANSFORMERS_MODULE_URL, supportsWebGPU, probeWebGPU, validateImageInput, normalizePredictions, createVisionAdapter });
 });
