@@ -40,31 +40,43 @@ Technical documentation should still be precise enough for engineers and AI agen
 
 Cutting-edge browser capabilities are welcome when they create meaningful value, but a new API should not casually turn unsupported browsers into dead ends.
 
-Prefer capability detection and an explicit fallback path. For local AI, the current architectural direction is accelerated WebGPU execution where supported with a local CPU/WASM-style fallback where practical.
+Prefer capability detection and an explicit fallback path. For local AI, WebGPU is an acceleration path where supported. CPU/WASM fallback is available only when the specific model and device class have been explicitly judged reasonable for that workload.
 
-## 8. Do not confuse novelty with usefulness
+## 8. Local-first does not mean run at any cost
+
+A private local feature should not punish the user's device merely because a slow fallback is technically possible.
+
+For compute-intensive AI, each model must declare an execution policy. The policy determines which accelerated backend is preferred, which fallback backends are permitted, and on which device classes those fallbacks are acceptable.
+
+If the required local execution path is unavailable or is expected to be unreasonably slow, memory-heavy, battery-intensive, or thermally expensive, the correct product behavior may be to stop cleanly and say that the AI feature is not supported on that device or browser yet.
+
+Do not silently replace an unsupported local path with remote/cloud processing.
+
+User-facing compatibility messages should be plain language first. Technical backend details may be shown separately for diagnostics.
+
+## 9. Do not confuse novelty with usefulness
 
 New browser technology is valuable only when it improves a real task. Avoid turning the product into a browser-API demonstration gallery.
 
-## 9. Test meaningful changes
+## 10. Test meaningful changes
 
 Every meaningful production change should be covered by an existing automated test or should add/update a regression test alongside the change.
 
 Tests should protect user-visible behavior, privacy invariants, architecture constraints, responsive behavior, browser compatibility, and important failure paths.
 
-## 10. Keep operations simple
+## 11. Keep operations simple
 
 The static architecture is a feature. Avoid adding servers, databases, queues, accounts, secrets, or recurring infrastructure unless they solve a problem that cannot reasonably be solved within the local-first model.
 
 Operational simplicity lowers cost and makes long-term survival more likely.
 
-## 11. Avoid single-person knowledge
+## 12. Avoid single-person knowledge
 
 If only one person knows how something works, it is unfinished.
 
 Important architecture, deployment, DNS, CI, recovery, dependency, and maintenance information belongs in version-controlled documentation.
 
-## 12. Preserve user identity in identity-document tools
+## 13. Preserve user identity in identity-document tools
 
 Passport and identity-photo utilities must not use generative techniques to reconstruct, beautify, or invent facial identity. Deterministic operations such as crop, geometry, brightness/contrast, segmentation, and print layout may be used when appropriate, with clear limitations.
 
@@ -75,9 +87,10 @@ Before adding a tool, ask:
 1. Is this useful to an ordinary person?
 2. Is there a meaningful privacy advantage to doing it locally?
 3. Can the browser perform it reliably enough?
-4. Can unsupported capabilities degrade gracefully?
-5. Can we test the important workflow?
-6. Does it fit naturally with the existing private-tool ecosystem?
-7. Can a future maintainer understand and operate it without private knowledge?
+4. Can unsupported capabilities degrade gracefully or fail clearly?
+5. For compute-heavy features, has the fallback workload been explicitly approved for the target device class?
+6. Can we test the important workflow?
+7. Does it fit naturally with the existing private-tool ecosystem?
+8. Can a future maintainer understand and operate it without private knowledge?
 
 A tool does not need a perfect answer to every question, but serious exceptions should be explicit rather than accidental.
