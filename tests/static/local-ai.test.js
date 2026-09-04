@@ -121,6 +121,7 @@ test('human and AI handbook keeps the durable project foundations present and li
     'docs/03-architecture/architecture-overview.md',
     'docs/03-architecture/hld.md',
     'docs/03-architecture/lld.md',
+    'docs/03-architecture/local-ai-models.md',
     'docs/04-testing/testing-architecture-and-strategy.md',
     'docs/04-testing/test-results.md',
     'docs/05-development/adding-a-new-tool.md'
@@ -146,6 +147,11 @@ test('human and AI handbook keeps the durable project foundations present and li
   const continuity = fs.readFileSync(path.join(root, 'docs/01-purpose/project-continuity.md'), 'utf8');
   assert.match(continuity, /should not depend on the continued involvement of its founder/i);
   assert.match(continuity, /baseline\/clean-local-tools-ci-v1/);
+
+  const modelDoc = fs.readFileSync(path.join(root, 'docs/03-architecture/local-ai-models.md'), 'utf8');
+  assert.match(modelDoc, /mobilenetv4_conv_small\.e2400_r224_in1k/);
+  assert.match(modelDoc, /Pinned framework version: `3\.8\.1`/);
+  assert.match(modelDoc, /No remote inference service is used as a fallback/);
 
   const testing = fs.readFileSync(path.join(root, 'docs/04-testing/testing-architecture-and-strategy.md'), 'utf8');
   assert.match(testing, /Every meaningful production change/);
