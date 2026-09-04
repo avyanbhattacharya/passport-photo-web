@@ -27,16 +27,39 @@ test('local AI foundation initializes and infers through local model adapter', a
   expect(pageErrors).toEqual([]);
 });
 
-test('worker status exposes local-only semantic model contract', async ({ page }) => {
-  await page.goto('/labs/local-ai/');
-  const status = await page.evaluate(async () => {
-    const client = new LocalAIClient();
-    try { return await client.status(); } finally { client.close(); }
+test('worker status exposes local-only semantic model contracts without downloading the real model', async ({ page }) => {
+  const externalRequests = [];
+  page.on('request', request => {
+    const url = new URL(request.url());
+    if (url.origin !== 'http://127.0.0.1:4173') externalRequests.push(request.url());
   });
-  expect(status.model).toBe('clean-local-tools-foundation-mlp-v1');
-  expect(status.task).toBe('foundation-classification-probe');
-  expect(status.localOnly).toBe(true);
-  expect(status.adapterVersion).toBeTruthy();
+  await page.goto('/labs/local-ai/');
+  const statuses = await page.evaluate(async () => {
+    const client = new LocalAIClient();
+    try { return { foundation: await client.status(), vision: await client.visionStatus() }; } finally { client.close(); }
+  });
+  expect(statuses.foundation.model).toBe('clean-local-tools-foundation-mlp-v1');
+  expect(statuses.foundation.task).toBe('foundation-classification-probe');
+  expect(statuses.foundation.localOnly).toBe(true);
+  expect(statuses.foundation.adapterVersion).toBeTruthy();
+  expect(statuses.vision.model).toBe('onnx-community/mobilenetv4_conv_small.e2400_r224_in1k');
+  expect(statuses.vision.task).toBe('image-classification');
+  expect(statuses.vision.localOnly).toBe(true);
+  expect(statuses.vision.preferredBackend).toBe('webgpu');
+  expect(statuses.vision.fallbackBackend).toBe('wasm');
+  expect(statuses.vision.remoteAssetsRequiredOnFirstUse).toBe(true);
+  expect(statuses.vision.backend).toBe('not-loaded');
+  expect(externalRequests).toEqual([]);
+});
+
+test('real vision lab is opt-in and explains first-use downloads', async ({ page }) => {
+  await page.goto('/labs/local-ai/');
+  await expect(page.getByRole('heading', { name: 'Real pretrained vision model' })).toBeVisible();
+  await expect(page.getByText(/model code and weights may be downloaded/i)).toBeVisible();
+  await expect(page.getByRole('button', { name: /classify locally/i })).toBeDisabled();
+  await expect(page.locator('#visionModel')).toHaveText('onnx-community/mobilenetv4_conv_small.e2400_r224_in1k');
+  await expect(page.locator('#visionPreferred')).toHaveText('webgpu');
+  await expect(page.locator('#visionFallback')).toHaveText('wasm');
 });
 
 test('lab has no horizontal overflow on phone-sized viewport', async ({ page }) => {
