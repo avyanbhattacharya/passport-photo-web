@@ -27,7 +27,7 @@ test('local AI foundation initializes and infers through local model adapter', a
   expect(pageErrors).toEqual([]);
 });
 
-test('worker status exposes local-only semantic model contracts without downloading the real model', async ({ page }) => {
+test('worker status exposes compute policy without downloading the real model', async ({ page }) => {
   const externalRequests = [];
   page.on('request', request => {
     const url = new URL(request.url());
@@ -47,19 +47,28 @@ test('worker status exposes local-only semantic model contracts without download
   expect(statuses.vision.localOnly).toBe(true);
   expect(statuses.vision.preferredBackend).toBe('webgpu');
   expect(statuses.vision.fallbackBackend).toBe('wasm');
+  expect(statuses.vision.fallbackMode).toBe('desktop-only');
+  expect(['desktop', 'mobile', 'unknown']).toContain(statuses.vision.deviceClass);
+  expect(typeof statuses.vision.compatibility.supported).toBe('boolean');
+  expect(statuses.vision.compatibility.fallbackMode).toBe('desktop-only');
   expect(statuses.vision.remoteAssetsRequiredOnFirstUse).toBe(true);
   expect(statuses.vision.backend).toBe('not-loaded');
   expect(externalRequests).toEqual([]);
 });
 
-test('real vision lab is opt-in and explains first-use downloads', async ({ page }) => {
+test('real vision lab checks support before enabling image selection', async ({ page }) => {
   await page.goto('/labs/local-ai/');
   await expect(page.getByRole('heading', { name: 'Real pretrained vision model' })).toBeVisible();
   await expect(page.getByText(/model code and weights may be downloaded/i)).toBeVisible();
-  await expect(page.getByRole('button', { name: /classify locally/i })).toBeDisabled();
+  await expect(page.locator('#visionCompatibility')).not.toContainText('Checking whether');
   await expect(page.locator('#visionModel')).toHaveText('onnx-community/mobilenetv4_conv_small.e2400_r224_in1k');
   await expect(page.locator('#visionPreferred')).toHaveText('webgpu');
-  await expect(page.locator('#visionFallback')).toHaveText('wasm');
+  await expect(page.locator('#visionFallback')).toContainText(/desktop-class devices only/i);
+  const compatibilityText = await page.locator('#visionCompatibility').textContent();
+  expect(/Supported on this device|not supported on this device yet/i.test(compatibilityText || '')).toBeTruthy();
+  const fileDisabled = await page.locator('#visionFile').isDisabled();
+  if (/not supported/i.test(compatibilityText || '')) expect(fileDisabled).toBe(true);
+  await expect(page.getByRole('button', { name: /classify locally/i })).toBeDisabled();
 });
 
 test('lab has no horizontal overflow on phone-sized viewport', async ({ page }) => {
