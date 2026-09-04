@@ -74,7 +74,15 @@ self.onmessage = async event => {
       return;
     }
     if (message.type === 'vision-status') {
-      self.postMessage({ id, ok: true, type: 'vision-status', adapterVersion: LocalAIVisionModelAdapter.VERSION, ...visionAdapter.status() });
+      const compatibility = await visionAdapter.compatibility();
+      self.postMessage({
+        id,
+        ok: true,
+        type: 'vision-status',
+        adapterVersion: LocalAIVisionModelAdapter.VERSION,
+        compatibility,
+        ...visionAdapter.status()
+      });
       return;
     }
     if (message.type === 'classify-image') {
@@ -84,6 +92,13 @@ self.onmessage = async event => {
     }
     throw new Error('unknown-worker-message');
   } catch (error) {
-    self.postMessage({ id, ok: false, error: error.message || String(error) });
+    self.postMessage({
+      id,
+      ok: false,
+      error: error.message || String(error),
+      code: error.code || 'local-ai-worker-error',
+      reason: error.reason || null,
+      deviceClass: error.deviceClass || null
+    });
   }
 };
