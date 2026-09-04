@@ -1,7 +1,8 @@
-importScripts('./webgpu-runtime.js', './async-utils.js', './model-adapter.js');
+importScripts('./webgpu-runtime.js', './async-utils.js', './model-adapter.js', './vision-model-adapter.js');
 
 const WEBGPU_INIT_TIMEOUT_MS = 2500;
 const modelAdapter = LocalAIModelAdapter.createFoundationAdapter();
+const visionAdapter = LocalAIVisionModelAdapter.createVisionAdapter({ navigatorLike: navigator, secureContext: self.isSecureContext });
 let runtimePromise = null;
 let runtimeState = { backend: 'cpu-js', reason: 'not-initialized', capabilities: {} };
 
@@ -70,6 +71,15 @@ self.onmessage = async event => {
     if (message.type === 'infer') {
       const result = await infer(message.input);
       self.postMessage({ id, ok: true, type: 'infer', ...result, task: modelAdapter.model.task, localOnly: modelAdapter.model.localOnly });
+      return;
+    }
+    if (message.type === 'vision-status') {
+      self.postMessage({ id, ok: true, type: 'vision-status', adapterVersion: LocalAIVisionModelAdapter.VERSION, ...visionAdapter.status() });
+      return;
+    }
+    if (message.type === 'classify-image') {
+      const result = await visionAdapter.classify(message.image, { topK: message.topK });
+      self.postMessage({ id, ok: true, type: 'classify-image', ...result });
       return;
     }
     throw new Error('unknown-worker-message');
