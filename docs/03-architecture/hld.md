@@ -40,14 +40,34 @@ The local AI layer provides a stable boundary between product features and AI ex
 Responsibilities:
 
 - detect relevant capabilities;
-- initialize an execution backend;
+- probe whether WebGPU is genuinely usable rather than checking API presence only;
 - prefer WebGPU when usable;
-- fall back locally when WebGPU is unavailable or initialization fails;
+- apply a model-specific execution policy before choosing a fallback;
+- permit CPU/WASM fallback only for model/device combinations that have been explicitly approved;
+- stop cleanly with a compatibility result when no reasonable local backend is available;
 - keep expensive execution behind a worker boundary where practical;
 - expose a tool-facing API that does not require every tool to understand GPU lifecycle details;
-- bound initialization so a broken/slow capability does not indefinitely hang a tool.
+- bound initialization so a broken/slow capability does not indefinitely hang a tool;
+- never convert an unsupported local path into a hidden remote/cloud inference path.
 
-Future model adapters should isolate model/framework-specific code from tool code.
+Model adapters isolate model/framework-specific code from tool code.
+
+The high-level decision flow is:
+
+```text
+Model requirements + device/browser capabilities
+                  |
+                  v
+          Execution policy
+          /      |       \
+         /       |        \
+     WebGPU   approved    unsupported
+       |      CPU/WASM        |
+       v         |             v
+      run       run      explain and stop
+```
+
+The policy is intentionally model-specific. A lightweight model may permit a WASM fallback on desktop-class devices, while a heavier model may require WebGPU everywhere. Technical capability and acceptable product experience are separate questions.
 
 ### 5. Third-party runtime assets
 
@@ -115,12 +135,15 @@ The application must expect failure at several boundaries:
 - unsupported browser APIs;
 - WebGPU unavailable;
 - GPU adapter/device initialization failure;
+- model execution policy refusing an unsafe/uncertified fallback;
 - worker startup or message failure;
 - third-party CDN unavailable;
 - malformed/encrypted/unsupported input;
 - memory pressure from large files/images;
 - browser-specific rendering or input behavior;
 - user cancellation or navigation.
+
+“Unsupported on this device/browser” is a valid, deliberate product outcome for advanced local AI. It is preferable to unexpectedly consuming excessive CPU, battery, memory, or thermal budget.
 
 Failures should not corrupt the original local file. Prefer understandable user-facing errors and recoverable state.
 
@@ -162,6 +185,7 @@ When introducing a new major component, document:
 3. the new data flows and trust boundaries;
 4. failure/fallback behavior;
 5. browser support;
-6. tests proving the important properties;
-7. operational burden;
-8. an ADR if the decision is architecturally significant.
+6. compute policy and supported device classes for heavy local features;
+7. tests proving the important properties;
+8. operational burden;
+9. an ADR if the decision is architecturally significant.
