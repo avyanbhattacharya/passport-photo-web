@@ -58,6 +58,8 @@ jobs:
         run: npx playwright install chromium
       - name: Core, Japa, and local AI deep tests
         run: npm run test:chromium:core
+      - name: Real local AI model smoke
+        run: npm run test:chromium:real-ai
       - name: PDF deep tests
         run: npm run test:chromium:pdf
       - name: Image and catalog deep tests
