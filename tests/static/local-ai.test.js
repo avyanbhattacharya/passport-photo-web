@@ -4,6 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const runtime = require('../../assets/local-ai/webgpu-runtime.js');
 const asyncUtils = require('../../assets/local-ai/async-utils.js');
+const modelAdapter = require('../../assets/local-ai/model-adapter.js');
 
 function assertCloseArray(actual, expected, tolerance = 1e-6) {
   assert.equal(actual.length, expected.length);
@@ -19,6 +20,36 @@ test('foundation model is deterministic and normalized', () => {
   const typed = runtime.inferCPU(new Float32Array([0.2, 0.4, 0.6, 0.8]));
   assertCloseArray(result.logits, typed.logits);
   assertCloseArray(result.probabilities, typed.probabilities);
+});
+
+test('model adapter exposes a local-only semantic contract and CPU fallback', async () => {
+  assert.equal(modelAdapter.FOUNDATION_MODEL.localOnly, true);
+  assert.equal(modelAdapter.FOUNDATION_MODEL.task, 'foundation-classification-probe');
+  assert.deepEqual(modelAdapter.FOUNDATION_MODEL.input.shape, [4]);
+  const adapter = modelAdapter.createFoundationAdapter({ runtime });
+  const result = await adapter.infer([0.2, 0.4, 0.6, 0.8], { backend: 'cpu-js' });
+  assert.equal(result.backend, 'cpu-js');
+  assert.equal(result.model, modelAdapter.FOUNDATION_MODEL.id);
+  assertCloseArray(result.probabilities, runtime.inferCPU([0.2, 0.4, 0.6, 0.8]).probabilities);
+  assert.throws(() => modelAdapter.describe('remote-magic-model'), /unknown-local-model/);
+});
+
+test('model adapter delegates WebGPU without leaking GPU details into callers', async () => {
+  const calls = [];
+  const fakeRuntime = {
+    inferCPU() { throw new Error('cpu should not run'); },
+    async inferWebGPU(device, input) {
+      calls.push({ device, input });
+      return { logits: [1, 2, 3], probabilities: [0.1, 0.2, 0.7] };
+    }
+  };
+  const adapter = modelAdapter.createFoundationAdapter({ runtime: fakeRuntime });
+  const device = { label: 'test-device' };
+  const result = await adapter.infer([1, 2, 3, 4], { backend: 'webgpu', device });
+  assert.equal(result.backend, 'webgpu');
+  assert.equal(result.model, modelAdapter.FOUNDATION_MODEL.id);
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].device, device);
 });
 
 test('input validation rejects malformed model input', () => {
