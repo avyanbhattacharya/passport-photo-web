@@ -17,7 +17,13 @@
         clearTimeout(pending.timer);
         this.pending.delete(message.id);
         if (message.ok) pending.resolve(message);
-        else pending.reject(new Error(message.error || 'local-ai-worker-error'));
+        else {
+          const error = new Error(message.error || 'local-ai-worker-error');
+          error.code = message.code || 'local-ai-worker-error';
+          error.reason = message.reason || null;
+          error.deviceClass = message.deviceClass || null;
+          pending.reject(error);
+        }
       };
       this.worker.onerror = event => {
         const error = new Error(event.message || 'local-ai-worker-crashed');
@@ -35,7 +41,9 @@
       return new Promise((resolve, reject) => {
         const timer = setTimeout(() => {
           this.pending.delete(id);
-          reject(new Error(`local-ai-worker-timeout:${type}`));
+          const error = new Error(`local-ai-worker-timeout:${type}`);
+          error.code = 'local-ai-worker-timeout';
+          reject(error);
         }, requestTimeout);
         this.pending.set(id, { resolve, reject, timer });
         this.worker.postMessage({ id, type, ...(payload || {}) });
