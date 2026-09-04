@@ -10,7 +10,7 @@ test('local AI foundation initializes and infers through local model adapter', a
   });
   const response = await page.goto('/labs/local-ai/');
   expect(response && response.ok()).toBeTruthy();
-  await expect(page.locator('h1')).toHaveText('Local AI Foundation Lab');
+  await expect(page.locator('h1')).toHaveText('Local AI Hardware Test Lab');
   await expect(page.getByText('Your files never leave your machine.')).toBeVisible();
   await expect(page.locator('#backend')).not.toHaveText('Checking…');
   const backend = await page.locator('#backend').textContent();
@@ -56,19 +56,30 @@ test('worker status exposes compute policy without downloading the real model', 
   expect(externalRequests).toEqual([]);
 });
 
-test('real vision lab checks support before enabling image selection', async ({ page }) => {
+test('shareable hardware lab checks support before file selection and generates a manual-only report', async ({ page }) => {
   await page.goto('/labs/local-ai/');
-  await expect(page.getByRole('heading', { name: 'Real pretrained vision model' })).toBeVisible();
-  await expect(page.getByText(/model code and weights may be downloaded/i)).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Compatibility' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Real pretrained vision test' })).toBeVisible();
+  await expect(page.getByText(/no test report is submitted automatically/i)).toBeVisible();
   await expect(page.locator('#visionCompatibility')).not.toContainText('Checking whether');
   await expect(page.locator('#visionModel')).toHaveText('onnx-community/mobilenetv4_conv_small.e2400_r224_in1k');
   await expect(page.locator('#visionPreferred')).toHaveText('webgpu');
   await expect(page.locator('#visionFallback')).toContainText(/desktop-class devices only/i);
+  await expect(page.locator('#testId')).toHaveText(/^TEST-[0-9A-F]{8}$/);
   const compatibilityText = await page.locator('#visionCompatibility').textContent();
   expect(/Supported on this device|not supported on this device yet/i.test(compatibilityText || '')).toBeTruthy();
   const fileDisabled = await page.locator('#visionFile').isDisabled();
   if (/not supported/i.test(compatibilityText || '')) expect(fileDisabled).toBe(true);
-  await expect(page.getByRole('button', { name: /classify locally/i })).toBeDisabled();
+  await expect(page.getByRole('button', { name: /run hardware test/i })).toBeDisabled();
+  await expect(page.getByRole('button', { name: /copy test report/i })).toBeEnabled();
+  await expect(page.getByRole('button', { name: /download test report/i })).toBeEnabled();
+  const report = JSON.parse(await page.locator('#report').textContent());
+  expect(report.schema).toBe('clean-local-tools-hardware-test/v1');
+  expect(report.privacy.workingFileUploaded).toBe(false);
+  expect(report.privacy.automaticTelemetry).toBe(false);
+  expect(report.privacy.reportSubmission).toBe('manual-only');
+  expect(['desktop', 'mobile', 'unknown', null]).toContain(report.capability.deviceClass);
+  expect(report.model.id).toBe('onnx-community/mobilenetv4_conv_small.e2400_r224_in1k');
 });
 
 test('lab has no horizontal overflow on phone-sized viewport', async ({ page }) => {
