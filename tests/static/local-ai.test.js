@@ -1,6 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const runtime = require('../../assets/local-ai/webgpu-runtime.js');
+const asyncUtils = require('../../assets/local-ai/async-utils.js');
 
 function assertCloseArray(actual, expected, tolerance = 1e-6) {
   assert.equal(actual.length, expected.length);
@@ -69,4 +70,10 @@ test('createRuntime only requests optional features exposed by adapter', async (
   assert.equal(created.backend, 'webgpu');
   assert.deepEqual(requested[0].requiredFeatures.sort(), ['core-features-and-limits', 'shader-f16']);
   assert.equal(created.capabilities.limits.maxComputeWorkgroupSizeX, 3);
+});
+
+test('async timeout utility resolves fast work and rejects stalled initialization', async () => {
+  assert.equal(await asyncUtils.withTimeout(Promise.resolve('ready'), 50, 'timeout'), 'ready');
+  const never = new Promise(() => {});
+  await assert.rejects(asyncUtils.withTimeout(never, 5, 'webgpu-initialization-timeout'), error => error.code === 'webgpu-initialization-timeout');
 });
