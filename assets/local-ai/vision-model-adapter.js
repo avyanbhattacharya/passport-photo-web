@@ -5,9 +5,10 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function () {
   'use strict';
 
-  const VERSION = '0.2.0';
+  const VERSION = '0.3.0';
   const TRANSFORMERS_VERSION = '3.8.1';
   const TRANSFORMERS_MODULE_URL = `https://cdn.jsdelivr.net/npm/@huggingface/transformers@${TRANSFORMERS_VERSION}`;
+  const UNSUPPORTED_CODE = 'local-ai-device-not-supported';
   const MODEL = Object.freeze({
     id: 'onnx-community/mobilenetv4_conv_small.e2400_r224_in1k',
     task: 'image-classification',
@@ -18,7 +19,12 @@
     frameworkVersion: TRANSFORMERS_VERSION,
     remoteAssetsRequiredOnFirstUse: true,
     preferredBackend: 'webgpu',
-    fallbackBackend: 'wasm'
+    fallbackBackend: 'wasm',
+    executionPolicy: Object.freeze({
+      fallbackMode: 'desktop-only',
+      unsupportedCode: UNSUPPORTED_CODE,
+      principle: 'local-first-does-not-mean-run-at-any-cost'
+    })
   });
 
   function supportsWebGPU(navigatorLike, secureContext) {
@@ -50,6 +56,36 @@
     }
   }
 
+  function detectDeviceClass(navigatorLike, explicitDeviceClass) {
+    if (explicitDeviceClass === 'desktop' || explicitDeviceClass === 'mobile') return explicitDeviceClass;
+    const nav = navigatorLike || null;
+    if (nav && nav.userAgentData && typeof nav.userAgentData.mobile === 'boolean') return nav.userAgentData.mobile ? 'mobile' : 'desktop';
+    return 'unknown';
+  }
+
+  function decideExecution(probe, deviceClass, policy) {
+    const currentPolicy = policy || MODEL.executionPolicy;
+    if (probe && probe.usable) return { supported: true, backend: 'webgpu', reason: 'available', deviceClass };
+    const reason = probe && probe.reason ? probe.reason : 'webgpu-unavailable';
+    if (currentPolicy.fallbackMode === 'always') return { supported: true, backend: 'wasm', reason, deviceClass };
+    if (currentPolicy.fallbackMode === 'desktop-only' && deviceClass === 'desktop') return { supported: true, backend: 'wasm', reason, deviceClass };
+    return {
+      supported: false,
+      backend: null,
+      reason,
+      deviceClass,
+      code: currentPolicy.unsupportedCode || UNSUPPORTED_CODE
+    };
+  }
+
+  function unsupportedError(decision) {
+    const error = new Error('This AI feature is not supported on this device yet. It requires browser hardware acceleration to run privately and efficiently.');
+    error.code = decision.code || UNSUPPORTED_CODE;
+    error.reason = decision.reason || 'unsupported-execution-policy';
+    error.deviceClass = decision.deviceClass || 'unknown';
+    return error;
+  }
+
   async function defaultModuleLoader(url) {
     return import(url);
   }
@@ -77,10 +113,13 @@
     const preferWebGPU = opts.preferWebGPU !== false;
     const webGPUProbeTimeoutMs = opts.webGPUProbeTimeoutMs || 2000;
     const modelId = opts.modelId || MODEL.id;
+    const deviceClass = detectDeviceClass(navigatorLike, opts.deviceClass);
+    const executionPolicy = opts.executionPolicy || MODEL.executionPolicy;
     let modulePromise = null;
     let classifierPromise = null;
     let activeBackend = null;
     let lastFallbackReason = null;
+    let lastDecision = null;
 
     async function loadModule() {
       if (!modulePromise) modulePromise = Promise.resolve(moduleLoader(moduleUrl));
@@ -100,22 +139,30 @@
       return classifier;
     }
 
+    async function compatibility() {
+      const probe = preferWebGPU
+        ? await probeWebGPU(navigatorLike, secureContext, webGPUProbeTimeoutMs)
+        : { usable: false, reason: 'webgpu-disabled' };
+      lastDecision = decideExecution(probe, deviceClass, executionPolicy);
+      return { ...lastDecision, fallbackMode: executionPolicy.fallbackMode };
+    }
+
     async function getClassifier() {
       if (classifierPromise) return classifierPromise;
       classifierPromise = (async () => {
-        if (preferWebGPU) {
-          const probe = await probeWebGPU(navigatorLike, secureContext, webGPUProbeTimeoutMs);
-          if (probe.usable) {
-            try {
-              return await buildPipeline('webgpu');
-            } catch (error) {
-              lastFallbackReason = error && (error.message || error.code) ? (error.message || error.code) : 'webgpu-model-initialization-failed';
-            }
-          } else {
-            lastFallbackReason = probe.reason;
+        const decision = await compatibility();
+        if (!decision.supported) throw unsupportedError(decision);
+        if (decision.backend === 'webgpu') {
+          try {
+            return await buildPipeline('webgpu');
+          } catch (error) {
+            lastFallbackReason = error && (error.message || error.code) ? (error.message || error.code) : 'webgpu-model-initialization-failed';
+            const fallbackDecision = decideExecution({ usable: false, reason: lastFallbackReason }, deviceClass, executionPolicy);
+            lastDecision = fallbackDecision;
+            if (!fallbackDecision.supported || fallbackDecision.backend !== 'wasm') throw unsupportedError(fallbackDecision);
           }
         } else {
-          lastFallbackReason = 'webgpu-disabled';
+          lastFallbackReason = decision.reason;
         }
         return buildPipeline('wasm');
       })();
@@ -124,12 +171,16 @@
 
     async function switchToWasm(reason) {
       lastFallbackReason = reason || 'webgpu-inference-failed';
+      const fallbackDecision = decideExecution({ usable: false, reason: lastFallbackReason }, deviceClass, executionPolicy);
+      lastDecision = fallbackDecision;
+      if (!fallbackDecision.supported || fallbackDecision.backend !== 'wasm') throw unsupportedError(fallbackDecision);
       classifierPromise = Promise.resolve(buildPipeline('wasm'));
       return classifierPromise;
     }
 
     return Object.freeze({
       model: MODEL,
+      compatibility,
       status() {
         return {
           model: modelId,
@@ -137,6 +188,10 @@
           backend: activeBackend || 'not-loaded',
           preferredBackend: MODEL.preferredBackend,
           fallbackBackend: MODEL.fallbackBackend,
+          fallbackMode: executionPolicy.fallbackMode,
+          deviceClass,
+          supported: lastDecision ? lastDecision.supported : null,
+          supportReason: lastDecision ? lastDecision.reason : null,
           localOnly: true,
           remoteAssetsRequiredOnFirstUse: true,
           fallbackReason: lastFallbackReason,
@@ -175,5 +230,5 @@
     });
   }
 
-  return Object.freeze({ VERSION, MODEL, TRANSFORMERS_VERSION, TRANSFORMERS_MODULE_URL, supportsWebGPU, probeWebGPU, validateImageInput, normalizePredictions, createVisionAdapter });
+  return Object.freeze({ VERSION, MODEL, UNSUPPORTED_CODE, TRANSFORMERS_VERSION, TRANSFORMERS_MODULE_URL, supportsWebGPU, probeWebGPU, detectDeviceClass, decideExecution, unsupportedError, validateImageInput, normalizePredictions, createVisionAdapter });
 });
