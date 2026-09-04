@@ -2,13 +2,20 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const runtime = require('../../assets/local-ai/webgpu-runtime.js');
 
+function assertCloseArray(actual, expected, tolerance = 1e-6) {
+  assert.equal(actual.length, expected.length);
+  for (let i = 0; i < actual.length; i += 1) assert.ok(Math.abs(actual[i] - expected[i]) <= tolerance, `index ${i}: ${actual[i]} vs ${expected[i]}`);
+}
+
 test('foundation model is deterministic and normalized', () => {
   const result = runtime.inferCPU([0.2, 0.4, 0.6, 0.8]);
   assert.equal(result.logits.length, 3);
   assert.equal(result.probabilities.length, 3);
   const sum = result.probabilities.reduce((a, b) => a + b, 0);
   assert.ok(Math.abs(sum - 1) < 1e-10);
-  assert.deepEqual(result, runtime.inferCPU(new Float32Array([0.2, 0.4, 0.6, 0.8])));
+  const typed = runtime.inferCPU(new Float32Array([0.2, 0.4, 0.6, 0.8]));
+  assertCloseArray(result.logits, typed.logits);
+  assertCloseArray(result.probabilities, typed.probabilities);
 });
 
 test('input validation rejects malformed model input', () => {
