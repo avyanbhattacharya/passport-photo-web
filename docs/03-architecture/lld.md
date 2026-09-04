@@ -43,39 +43,46 @@ Tool
 Local AI client
   -> worker message { id, operation, payload }
 Worker
+  -> evaluate compatibility/execution policy
   -> choose/initialize backend
   -> execute model/operation
-  -> response { id, ok, backend, result | error }
+  -> response { id, ok, backend, result | structured error }
 Client
   -> resolve/reject original request
 ```
 
-Exact field names are implementation details and should be documented next to the runtime when they stabilize. Do not let tools depend on undocumented worker internals.
+Structured compatibility errors should preserve a stable machine-readable code such as `local-ai-device-not-supported` in addition to a human-readable message.
 
 ## WebGPU initialization
 
 WebGPU must be capability-detected rather than inferred from a browser user-agent string.
+
+API presence alone is insufficient. A model that depends on WebGPU must perform a bounded adapter preflight because some environments expose `navigator.gpu` while still failing to return a usable adapter.
 
 Conceptual sequence:
 
 ```text
 Is navigator.gpu available?
         |
-       no -> local fallback
-        |
-       yes
-        v
-request adapter
-        |
- adapter unavailable/failure -> local fallback
+       no
         |
         v
-request device
-        |
- device unavailable/failure -> local fallback
+ evaluate model fallback policy
+
+navigator.gpu available
         |
         v
-WebGPU backend ready
+request adapter with timeout
+        |
+ adapter unavailable/failure
+        |
+        v
+ evaluate model fallback policy
+
+adapter available
+        |
+        v
+initialize WebGPU model/backend
 ```
 
 Initialization must be bounded. A browser/driver that exposes an API but fails to initialize correctly must not leave the user waiting indefinitely.
@@ -84,12 +91,12 @@ Backend selection should be observable for tests and diagnostics, but ordinary u
 
 ## Model adapter direction
 
-Tools should eventually request semantic operations rather than instantiate a specific AI framework directly.
+Tools should request semantic operations rather than instantiate a specific AI framework directly.
 
 Prefer:
 
 ```text
-feature -> model adapter -> runtime/backend
+feature -> model adapter -> execution policy -> runtime/backend
 ```
 
 Avoid:
@@ -100,17 +107,46 @@ feature -> framework-specific global object -> hard-coded model/CDN/GPU assumpti
 
 This makes it possible to change model format, inference library, hosting, caching, or acceleration strategy without rewriting every tool.
 
+## Execution policy
+
+Each compute-intensive model must declare its acceptable execution paths. The policy is part of the model contract, not a generic global fallback switch.
+
+At minimum, document:
+
+- preferred backend;
+- allowed fallback backend(s);
+- fallback mode such as `always`, `desktop-only`, or `never`;
+- supported/unsupported device classes;
+- model-specific performance evidence used to approve a fallback;
+- stable unsupported error code.
+
+The current experimental MobileNetV4 adapter uses:
+
+```text
+preferred backend: WebGPU
+fallback backend: WASM
+fallback policy: desktop-only
+unsupported code: local-ai-device-not-supported
+```
+
+Device classification should avoid brittle browser-name checks. The current adapter accepts an explicit device class when the caller has one and otherwise uses `navigator.userAgentData.mobile` where available. If the device class cannot be established and the fallback is only certified for desktop, the conservative result is unsupported rather than assuming the heavy CPU path is safe.
+
+This conservative behavior is deliberate.
+
 ## Fallback behavior
 
 Fallback is part of the feature, not an exception handler added at the end.
 
-For each accelerated operation document:
+When WebGPU is unavailable, adapter acquisition fails, model initialization fails, or GPU inference fails, the model adapter must re-evaluate the execution policy before switching backends.
 
-- preferred backend;
-- fallback backend;
-- expected performance difference;
-- whether output should be numerically/semantically equivalent;
-- what happens when neither backend is usable.
+Do **not** automatically run CPU/WASM merely because it exists.
+
+For a model whose fallback is not approved on the current device class:
+
+1. stop before loading the heavy fallback where possible;
+2. return `local-ai-device-not-supported`;
+3. explain in plain language that the feature needs supported browser/device acceleration or an approved local fallback;
+4. reassure the user that the file was not uploaded or sent to a cloud fallback.
 
 Do not silently send the work to a remote AI service as a fallback for a local-only feature.
 
@@ -148,6 +184,10 @@ User-facing errors should answer, in plain language:
 
 Diagnostic details may be logged for development, but do not log private file contents or extracted sensitive information.
 
+For unsupported local AI, the preferred user-facing shape is equivalent to:
+
+> This AI feature isn't supported on this device yet. It requires browser hardware acceleration, or an explicitly certified local fallback, to run privately and efficiently. Your file has not been uploaded or processed elsewhere.
+
 ## Identity-photo constraint
 
 Passport-photo processing must not regenerate facial identity. Keep deterministic image operations separate from generative AI experimentation.
@@ -155,6 +195,8 @@ Passport-photo processing must not regenerate facial identity. Keep deterministi
 ## Performance constraints
 
 Large browser-local files can create memory pressure. Avoid unnecessary full-size copies and base64 expansion when Blob/ArrayBuffer/object-URL workflows are available.
+
+Compute-heavy models need measured fallback evidence before a device class is certified. “It eventually finishes” is not sufficient evidence.
 
 Performance optimization must not weaken correctness or privacy behavior.
 
@@ -164,7 +206,8 @@ A new subsystem is not complete until:
 
 - behavior exists;
 - failure/fallback paths are defined;
+- compute policy is explicit for heavy local models;
 - tests cover meaningful behavior;
 - CI is green;
 - relevant architecture/operations docs are updated;
-- user-facing privacy claims accurately describe the implementation.
+- user-facing privacy and compatibility claims accurately describe the implementation.
