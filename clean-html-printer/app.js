@@ -7,6 +7,8 @@
   let history = [], cursor = 0, original = '', selected = null, ready = false, generation = 0;
   const frame = $('preview');
   // Parse only in an inert template. Never attach imported nodes or attributes.
+  // WebKit requires sandbox allow-scripts for parent-installed event callbacks.
+  // CSP still forbids script resources/inline markup; reconstruction is the primary boundary.
   function sanitize(source) {
     const template = document.createElement('template');
     template.innerHTML = source;
