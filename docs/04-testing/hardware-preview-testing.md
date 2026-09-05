@@ -76,6 +76,8 @@ The report must not contain:
 
 Preferred result: WebGPU is usable and the real model runs with the `webgpu` backend.
 
+If a real operator invalidates or stalls the WebGPU device after the adapter probe succeeds, the bounded inference watchdog must let a certified desktop retry locally with WASM. The report must identify `wasm` as the selected backend and retain `webgpu-inference-timeout` (or the concrete WebGPU rejection) as the fallback reason. A generic outer `local-ai-worker-timeout` is not an acceptable recovery result for this known failure class.
+
 ### Desktop Safari
 
 Preferred result: WebGPU where the current model/runtime combination supports it. A certified local fallback may be used only if the model's execution policy permits it.

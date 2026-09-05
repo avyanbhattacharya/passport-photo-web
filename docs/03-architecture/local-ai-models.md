@@ -97,11 +97,16 @@ secure context + navigator.gpu available?
 load WebGPU pipeline
      | success
      v
-  classify
+  classify with a bounded
+  30-second WebGPU attempt
      |
- WebGPU inference failure
+ WebGPU rejection, device loss,
+ or inference watchdog timeout
      v
-rebuild as WASM pipeline
+re-evaluate model policy
+     |
+certified desktop -> rebuild as WASM
+mobile / unknown -> unsupported
 
 no WebGPU / WebGPU initialization failure
            |
@@ -110,6 +115,20 @@ no WebGPU / WebGPU initialization failure
 ```
 
 No remote inference service is used as a fallback.
+
+### Stalled or lost WebGPU devices
+
+A successful `requestAdapter()` probe proves that a browser can expose a GPU adapter; it does not prove that every operator in a real model can execute on that adapter. A physical macOS/Chrome test demonstrated that the Metal-backed WebGPU device can become invalid while ONNX Runtime creates or executes a model operator. In that failure mode, the framework promise may remain pending instead of rejecting promptly.
+
+The vision adapter therefore places a 30-second watchdog around **WebGPU inference only**. Model and framework download/pipeline construction remain governed by the broader client operation timeout so a slow first download is not mistaken for a broken GPU. If WebGPU inference rejects or exceeds the watchdog:
+
+- the failure reason is retained (`webgpu-inference-timeout` for a stalled promise);
+- the model execution policy is evaluated again;
+- certified desktop-class devices rebuild the pipeline with WASM/q8 and retry locally;
+- mobile and unknown devices do not run the unapproved heavy fallback and return `local-ai-device-not-supported`;
+- no remote inference fallback is introduced.
+
+This watchdog cannot cancel work hidden inside a third-party runtime promise, but it bounds how long Clean Local Tools waits before applying its own execution policy. Future runtime integrations should prefer abortable initialization/inference APIs when available.
 
 ## Safari strategy
 
@@ -127,7 +146,7 @@ Required CI intentionally does **not** download the external model on every run.
 
 Instead:
 
-- static tests inject a fake Transformers.js module and prove WebGPU preference, WASM fallback, inference-failure fallback, input handling, pinned metadata, and result normalization;
+- static tests inject a fake Transformers.js module and prove WebGPU preference, WASM fallback, inference-rejection fallback, stalled-inference watchdog behavior, mobile/unknown rejection, input handling, pinned metadata, and result normalization;
 - browser tests prove the worker exposes the real-model semantic contract;
 - browser tests prove model assets are not downloaded merely by opening the lab or querying model status;
 - existing foundation inference continues to prove real worker execution without external dependencies.

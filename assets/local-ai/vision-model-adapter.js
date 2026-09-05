@@ -5,10 +5,11 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function () {
   'use strict';
 
-  const VERSION = '0.3.0';
+  const VERSION = '0.4.0';
   const TRANSFORMERS_VERSION = '3.8.1';
   const TRANSFORMERS_MODULE_URL = `https://cdn.jsdelivr.net/npm/@huggingface/transformers@${TRANSFORMERS_VERSION}`;
   const UNSUPPORTED_CODE = 'local-ai-device-not-supported';
+  const DEFAULT_WEBGPU_INFERENCE_TIMEOUT_MS = 30000;
   const MODEL = Object.freeze({
     id: 'onnx-community/mobilenetv4_conv_small.e2400_r224_in1k',
     task: 'image-classification',
@@ -104,6 +105,18 @@
     }));
   }
 
+  function withTimeout(promise, timeoutMs, code) {
+    let timer;
+    const timeout = new Promise((_, reject) => {
+      timer = setTimeout(() => {
+        const error = new Error(code);
+        error.code = code;
+        reject(error);
+      }, timeoutMs);
+    });
+    return Promise.race([Promise.resolve(promise), timeout]).finally(() => clearTimeout(timer));
+  }
+
   function createVisionAdapter(options) {
     const opts = options || {};
     const moduleLoader = opts.moduleLoader || defaultModuleLoader;
@@ -115,6 +128,10 @@
     const modelId = opts.modelId || MODEL.id;
     const deviceClass = detectDeviceClass(navigatorLike, opts.deviceClass);
     const executionPolicy = opts.executionPolicy || MODEL.executionPolicy;
+    const configuredInferenceTimeoutMs = Number(opts.webGPUInferenceTimeoutMs);
+    const webGPUInferenceTimeoutMs = configuredInferenceTimeoutMs > 0
+      ? configuredInferenceTimeoutMs
+      : DEFAULT_WEBGPU_INFERENCE_TIMEOUT_MS;
     let modulePromise = null;
     let classifierPromise = null;
     let activeBackend = null;
@@ -189,9 +206,12 @@
           preferredBackend: MODEL.preferredBackend,
           fallbackBackend: MODEL.fallbackBackend,
           fallbackMode: executionPolicy.fallbackMode,
+          executionPolicy: preferWebGPU ? 'gpu-preferred' : 'fallback-only',
           deviceClass,
           supported: lastDecision ? lastDecision.supported : null,
           supportReason: lastDecision ? lastDecision.reason : null,
+          policyDecision: lastDecision ? (lastDecision.supported ? lastDecision.backend : 'unsupported') : null,
+          policyReason: lastDecision ? lastDecision.reason : null,
           localOnly: true,
           remoteAssetsRequiredOnFirstUse: true,
           fallbackReason: lastFallbackReason,
@@ -204,7 +224,13 @@
         const topK = Math.min(10, Math.max(1, Number((options || {}).topK || 5)));
         let classifier = await getClassifier();
         try {
-          const output = await classifier(image, { top_k: topK });
+          const output = activeBackend === 'webgpu'
+            ? await withTimeout(
+              classifier(image, { top_k: topK }),
+              webGPUInferenceTimeoutMs,
+              'webgpu-inference-timeout'
+            )
+            : await classifier(image, { top_k: topK });
           return {
             model: modelId,
             task: MODEL.task,
@@ -215,7 +241,10 @@
           };
         } catch (error) {
           if (activeBackend !== 'webgpu') throw error;
-          classifier = await switchToWasm(error && error.message ? error.message : 'webgpu-inference-failed');
+          const failureReason = error && (error.code || error.message)
+            ? (error.code || error.message)
+            : 'webgpu-inference-failed';
+          classifier = await switchToWasm(failureReason);
           const output = await classifier(image, { top_k: topK });
           return {
             model: modelId,
@@ -230,5 +259,5 @@
     });
   }
 
-  return Object.freeze({ VERSION, MODEL, UNSUPPORTED_CODE, TRANSFORMERS_VERSION, TRANSFORMERS_MODULE_URL, supportsWebGPU, probeWebGPU, detectDeviceClass, decideExecution, unsupportedError, validateImageInput, normalizePredictions, createVisionAdapter });
+  return Object.freeze({ VERSION, MODEL, UNSUPPORTED_CODE, DEFAULT_WEBGPU_INFERENCE_TIMEOUT_MS, TRANSFORMERS_VERSION, TRANSFORMERS_MODULE_URL, supportsWebGPU, probeWebGPU, detectDeviceClass, decideExecution, unsupportedError, validateImageInput, normalizePredictions, withTimeout, createVisionAdapter });
 });

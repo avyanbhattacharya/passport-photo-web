@@ -13,6 +13,7 @@ test('vision model metadata is pinned, local-only, and explicit about compute po
   assert.equal(vision.MODEL.fallbackBackend, 'wasm');
   assert.equal(vision.MODEL.executionPolicy.fallbackMode, 'desktop-only');
   assert.equal(vision.MODEL.executionPolicy.unsupportedCode, 'local-ai-device-not-supported');
+  assert.equal(vision.DEFAULT_WEBGPU_INFERENCE_TIMEOUT_MS, 30000);
 });
 
 test('WebGPU preflight requires an actual adapter, not merely navigator.gpu', async () => {
@@ -210,6 +211,57 @@ test('desktop retries on WASM if WebGPU inference fails after loading', async ()
   assert.deepEqual(loads, ['webgpu', 'wasm']);
   assert.equal(result.backend, 'wasm');
   assert.equal(result.fallbackReason, 'gpu-inference-failed');
+});
+
+test('desktop watchdog falls back to WASM when WebGPU inference never settles', async () => {
+  const loads = [];
+  const fakeModule = {
+    env: {},
+    async pipeline(task, model, options) {
+      loads.push(options.device);
+      if (options.device === 'webgpu') return async () => new Promise(() => {});
+      return async () => [{ label: 'screen', score: 0.82 }];
+    }
+  };
+  const adapter = vision.createVisionAdapter({
+    moduleLoader: async () => fakeModule,
+    deviceClass: 'desktop',
+    webGPUInferenceTimeoutMs: 10,
+    navigatorLike: { gpu: { async requestAdapter() { return { name: 'test-adapter' }; } } },
+    secureContext: true
+  });
+  const result = await adapter.classify(new Blob(['x'], { type: 'image/png' }));
+  assert.deepEqual(loads, ['webgpu', 'wasm']);
+  assert.equal(result.backend, 'wasm');
+  assert.equal(result.fallbackReason, 'webgpu-inference-timeout');
+  assert.deepEqual(result.predictions, [{ label: 'screen', score: 0.82 }]);
+  const status = adapter.status();
+  assert.equal(status.executionPolicy, 'gpu-preferred');
+  assert.equal(status.policyDecision, 'wasm');
+  assert.equal(status.policyReason, 'webgpu-inference-timeout');
+});
+
+test('mobile watchdog does not run unapproved WASM after stalled WebGPU inference', async () => {
+  const loads = [];
+  const fakeModule = {
+    env: {},
+    async pipeline(task, model, options) {
+      loads.push(options.device);
+      return async () => new Promise(() => {});
+    }
+  };
+  const adapter = vision.createVisionAdapter({
+    moduleLoader: async () => fakeModule,
+    deviceClass: 'mobile',
+    webGPUInferenceTimeoutMs: 10,
+    navigatorLike: { gpu: { async requestAdapter() { return { name: 'test-adapter' }; } } },
+    secureContext: true
+  });
+  await assert.rejects(
+    adapter.classify(new Blob(['x'], { type: 'image/png' })),
+    error => error.code === vision.UNSUPPORTED_CODE && error.reason === 'webgpu-inference-timeout'
+  );
+  assert.deepEqual(loads, ['webgpu']);
 });
 
 test('vision adapter rejects non-image-like inputs and caps top-k output', async () => {

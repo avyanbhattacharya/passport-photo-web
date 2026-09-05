@@ -130,6 +130,25 @@ The vision adapter was changed to perform a bounded `requestAdapter()` preflight
 
 Physical-browser WebGPU evidence should be recorded separately when we exercise the model on hardware where an actual GPU adapter is available.
 
+## Physical macOS Chrome WebGPU failure evidence
+
+Date: 2026-09-04
+
+Preview branch: `test/webgpu-hardware-preview-v1`
+
+Browser/device report:
+
+- Chrome `150.0.0.0` on macOS/Intel platform reporting four logical processors and 16 GB device memory;
+- `navigator.gpu` present and a high-performance adapter returned successfully;
+- MobileNetV4 WebGPU inference raised Dawn/Metal validation errors for an invalid `Transpose` compute pipeline;
+- the GPU device subsequently reported invalid external-instance references and `GPUBuffer.mapAsync` aborted;
+- the framework inference promise did not reject through the adapter in time, so two attempts ended at the outer `local-ai-worker-timeout` near 120 seconds;
+- test reports: `TEST-F3AADDE3` (separate image-decode failure) and `TEST-4F9BF48A` (repeatable WebGPU stall/timeout).
+
+This proves that API/adapter preflight alone is insufficient. A real operator can invalidate a physical WebGPU device, and a third-party inference promise can stall instead of rejecting in a way the existing fallback catches.
+
+The corrective design adds a bounded WebGPU-inference watchdog inside the model adapter. On certified desktop devices, a stall is converted to `webgpu-inference-timeout` and the model is retried locally with WASM/q8. Mobile and unknown devices continue to reject the heavy fallback. Deterministic tests cover both branches of that policy.
+
 ### Required CI after the experiment
 
 The real-model browser smoke deliberately remains available as:
