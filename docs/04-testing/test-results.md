@@ -130,7 +130,7 @@ The vision adapter was changed to perform a bounded `requestAdapter()` preflight
 
 Physical-browser WebGPU evidence should be recorded separately when we exercise the model on hardware where an actual GPU adapter is available.
 
-## Physical macOS Chrome WebGPU failure evidence
+## Physical macOS Chrome WebGPU failure and recovery evidence
 
 Date: 2026-09-04
 
@@ -152,6 +152,27 @@ An initial corrective change guarded WebGPU inference, but physical retest `TEST
 The second corrective change added separate bounded WebGPU initialization and inference watchdogs inside the model adapter. Physical retest `TEST-6B2BF398` still reached `local-ai-worker-timeout` while Chrome displayed the same invalid `Transpose` pipeline, external-instance, and `GPUBuffer.mapAsync` errors. This proved the native failure could block the worker's JavaScript event loop, preventing watchdog timers located inside that worker from running.
 
 The authoritative recovery boundary is now `LocalAIClient` on the page. It supervises the WebGPU worker externally, terminates it after 30 seconds without a response, and starts a fresh worker that re-evaluates policy with reason `webgpu-worker-timeout`. Certified desktop devices retry locally with WASM/q8; mobile and unknown devices still reject the heavy fallback. Deterministic tests cover worker termination/restart as well as the adapter policy.
+
+### Successful physical recovery
+
+Physical retest `TEST-464BB5FC` passed on 2026-09-05 at preview commit `0b8d80e455d10555bc8c067196b4f6357802e4a6` (quality-gate run `33936129720`). It used the same macOS/Intel Chrome `150.0.0.0` environment that exposed the repeatable WebGPU failure.
+
+```text
+WebGPU API present                   YES
+WebGPU adapter usable                YES
+Initial policy decision              webgpu
+Recovered backend                    wasm
+Fallback reason                      webgpu-worker-timeout
+Model and inference time             53,638 ms
+Predictions returned                 5
+Outcome                              PASS
+Working file uploaded                NO
+Automatic telemetry                  NO
+```
+
+This is the first physical-hardware evidence that the external supervisor can recover from a native WebGPU/Metal failure that blocks the inference worker's event loop. It proves that the frozen worker is terminated, the desktop-only policy permits a fresh local WASM/q8 attempt, and classification completes without uploading the working image.
+
+It does **not** prove that this Mac can execute MobileNetV4 successfully on WebGPU. The browser still raised Dawn/Metal `TransposeShared` pipeline validation errors before recovery. It also does not establish performance on other Macs, operating systems, browsers, or mobile devices.
 
 ### Required CI after the experiment
 
