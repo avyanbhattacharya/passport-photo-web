@@ -94,11 +94,12 @@ secure context + navigator.gpu available?
            |
           yes
            v
-load WebGPU pipeline
+load WebGPU pipeline with a
+bounded 30-second attempt
      | success
      v
-  classify with a bounded
-  30-second WebGPU attempt
+classify with a bounded
+30-second WebGPU attempt
      |
  WebGPU rejection, device loss,
  or inference watchdog timeout
@@ -118,11 +119,11 @@ No remote inference service is used as a fallback.
 
 ### Stalled or lost WebGPU devices
 
-A successful `requestAdapter()` probe proves that a browser can expose a GPU adapter; it does not prove that every operator in a real model can execute on that adapter. A physical macOS/Chrome test demonstrated that the Metal-backed WebGPU device can become invalid while ONNX Runtime creates or executes a model operator. In that failure mode, the framework promise may remain pending instead of rejecting promptly.
+A successful `requestAdapter()` probe proves that a browser can expose a GPU adapter; it does not prove that every operator in a real model can initialize or execute on that adapter. A physical macOS/Chrome test demonstrated that the Metal-backed WebGPU device can become invalid while ONNX Runtime creates or executes a model operator. In that failure mode, either the pipeline-construction promise or the inference promise may remain pending instead of rejecting promptly.
 
-The vision adapter therefore places a 30-second watchdog around **WebGPU inference only**. Model and framework download/pipeline construction remain governed by the broader client operation timeout so a slow first download is not mistaken for a broken GPU. If WebGPU inference rejects or exceeds the watchdog:
+The vision adapter therefore places separate 30-second watchdogs around WebGPU pipeline construction and WebGPU inference. The framework module is loaded before the initialization watchdog starts. WASM construction/inference remains governed by the broader client operation timeout. If WebGPU initialization or inference rejects or exceeds its watchdog:
 
-- the failure reason is retained (`webgpu-inference-timeout` for a stalled promise);
+- the failure reason is retained (`webgpu-model-initialization-timeout` or `webgpu-inference-timeout` for a stalled promise);
 - the model execution policy is evaluated again;
 - certified desktop-class devices rebuild the pipeline with WASM/q8 and retry locally;
 - mobile and unknown devices do not run the unapproved heavy fallback and return `local-ai-device-not-supported`;
@@ -146,7 +147,7 @@ Required CI intentionally does **not** download the external model on every run.
 
 Instead:
 
-- static tests inject a fake Transformers.js module and prove WebGPU preference, WASM fallback, inference-rejection fallback, stalled-inference watchdog behavior, mobile/unknown rejection, input handling, pinned metadata, and result normalization;
+- static tests inject a fake Transformers.js module and prove WebGPU preference, WASM fallback, initialization/inference rejection fallback, stalled-initialization and stalled-inference watchdog behavior, mobile/unknown rejection, input handling, pinned metadata, and result normalization;
 - browser tests prove the worker exposes the real-model semantic contract;
 - browser tests prove model assets are not downloaded merely by opening the lab or querying model status;
 - existing foundation inference continues to prove real worker execution without external dependencies.

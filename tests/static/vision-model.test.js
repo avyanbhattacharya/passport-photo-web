@@ -13,6 +13,7 @@ test('vision model metadata is pinned, local-only, and explicit about compute po
   assert.equal(vision.MODEL.fallbackBackend, 'wasm');
   assert.equal(vision.MODEL.executionPolicy.fallbackMode, 'desktop-only');
   assert.equal(vision.MODEL.executionPolicy.unsupportedCode, 'local-ai-device-not-supported');
+  assert.equal(vision.DEFAULT_WEBGPU_INITIALIZATION_TIMEOUT_MS, 30000);
   assert.equal(vision.DEFAULT_WEBGPU_INFERENCE_TIMEOUT_MS, 30000);
 });
 
@@ -188,6 +189,52 @@ test('mobile does not fall back after WebGPU model initialization failure', asyn
     secureContext: true
   });
   await assert.rejects(adapter.classify(new Blob(['x'], { type: 'image/png' })), error => error.code === vision.UNSUPPORTED_CODE);
+  assert.deepEqual(loads, ['webgpu']);
+});
+
+test('desktop watchdog falls back to WASM when WebGPU model initialization never settles', async () => {
+  const loads = [];
+  const fakeModule = {
+    env: {},
+    async pipeline(task, model, options) {
+      loads.push(options.device);
+      if (options.device === 'webgpu') return new Promise(() => {});
+      return async () => [{ label: 'document', score: 0.75 }];
+    }
+  };
+  const adapter = vision.createVisionAdapter({
+    moduleLoader: async () => fakeModule,
+    deviceClass: 'desktop',
+    webGPUInitializationTimeoutMs: 10,
+    navigatorLike: { gpu: { async requestAdapter() { return { name: 'test-adapter' }; } } },
+    secureContext: true
+  });
+  const result = await adapter.classify(new Blob(['x'], { type: 'image/png' }));
+  assert.deepEqual(loads, ['webgpu', 'wasm']);
+  assert.equal(result.backend, 'wasm');
+  assert.equal(result.fallbackReason, 'webgpu-model-initialization-timeout');
+});
+
+test('mobile watchdog rejects stalled WebGPU model initialization without WASM', async () => {
+  const loads = [];
+  const fakeModule = {
+    env: {},
+    async pipeline(task, model, options) {
+      loads.push(options.device);
+      return new Promise(() => {});
+    }
+  };
+  const adapter = vision.createVisionAdapter({
+    moduleLoader: async () => fakeModule,
+    deviceClass: 'mobile',
+    webGPUInitializationTimeoutMs: 10,
+    navigatorLike: { gpu: { async requestAdapter() { return { name: 'test-adapter' }; } } },
+    secureContext: true
+  });
+  await assert.rejects(
+    adapter.classify(new Blob(['x'], { type: 'image/png' })),
+    error => error.code === vision.UNSUPPORTED_CODE && error.reason === 'webgpu-model-initialization-timeout'
+  );
   assert.deepEqual(loads, ['webgpu']);
 });
 

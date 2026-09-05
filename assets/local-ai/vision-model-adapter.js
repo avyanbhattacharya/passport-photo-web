@@ -5,10 +5,11 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function () {
   'use strict';
 
-  const VERSION = '0.4.0';
+  const VERSION = '0.5.0';
   const TRANSFORMERS_VERSION = '3.8.1';
   const TRANSFORMERS_MODULE_URL = `https://cdn.jsdelivr.net/npm/@huggingface/transformers@${TRANSFORMERS_VERSION}`;
   const UNSUPPORTED_CODE = 'local-ai-device-not-supported';
+  const DEFAULT_WEBGPU_INITIALIZATION_TIMEOUT_MS = 30000;
   const DEFAULT_WEBGPU_INFERENCE_TIMEOUT_MS = 30000;
   const MODEL = Object.freeze({
     id: 'onnx-community/mobilenetv4_conv_small.e2400_r224_in1k',
@@ -128,6 +129,10 @@
     const modelId = opts.modelId || MODEL.id;
     const deviceClass = detectDeviceClass(navigatorLike, opts.deviceClass);
     const executionPolicy = opts.executionPolicy || MODEL.executionPolicy;
+    const configuredInitializationTimeoutMs = Number(opts.webGPUInitializationTimeoutMs);
+    const webGPUInitializationTimeoutMs = configuredInitializationTimeoutMs > 0
+      ? configuredInitializationTimeoutMs
+      : DEFAULT_WEBGPU_INITIALIZATION_TIMEOUT_MS;
     const configuredInferenceTimeoutMs = Number(opts.webGPUInferenceTimeoutMs);
     const webGPUInferenceTimeoutMs = configuredInferenceTimeoutMs > 0
       ? configuredInferenceTimeoutMs
@@ -151,7 +156,14 @@
       const pipelineOptions = backend === 'webgpu'
         ? { device: 'webgpu', dtype: 'fp32' }
         : { device: 'wasm', dtype: 'q8' };
-      const classifier = await loaded.pipeline(MODEL.task, modelId, pipelineOptions);
+      const pipelinePromise = loaded.pipeline(MODEL.task, modelId, pipelineOptions);
+      const classifier = backend === 'webgpu'
+        ? await withTimeout(
+          pipelinePromise,
+          webGPUInitializationTimeoutMs,
+          'webgpu-model-initialization-timeout'
+        )
+        : await pipelinePromise;
       activeBackend = backend;
       return classifier;
     }
@@ -259,5 +271,5 @@
     });
   }
 
-  return Object.freeze({ VERSION, MODEL, UNSUPPORTED_CODE, DEFAULT_WEBGPU_INFERENCE_TIMEOUT_MS, TRANSFORMERS_VERSION, TRANSFORMERS_MODULE_URL, supportsWebGPU, probeWebGPU, detectDeviceClass, decideExecution, unsupportedError, validateImageInput, normalizePredictions, withTimeout, createVisionAdapter });
+  return Object.freeze({ VERSION, MODEL, UNSUPPORTED_CODE, DEFAULT_WEBGPU_INITIALIZATION_TIMEOUT_MS, DEFAULT_WEBGPU_INFERENCE_TIMEOUT_MS, TRANSFORMERS_VERSION, TRANSFORMERS_MODULE_URL, supportsWebGPU, probeWebGPU, detectDeviceClass, decideExecution, unsupportedError, validateImageInput, normalizePredictions, withTimeout, createVisionAdapter });
 });

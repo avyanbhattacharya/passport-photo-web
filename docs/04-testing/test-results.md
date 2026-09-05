@@ -147,7 +147,9 @@ Browser/device report:
 
 This proves that API/adapter preflight alone is insufficient. A real operator can invalidate a physical WebGPU device, and a third-party inference promise can stall instead of rejecting in a way the existing fallback catches.
 
-The corrective design adds a bounded WebGPU-inference watchdog inside the model adapter. On certified desktop devices, a stall is converted to `webgpu-inference-timeout` and the model is retried locally with WASM/q8. Mobile and unknown devices continue to reject the heavy fallback. Deterministic tests cover both branches of that policy.
+An initial corrective change guarded WebGPU inference, but physical retest `TEST-7C564B05` still reached the outer 120-second timeout. This proved the unresolved promise could occur during WebGPU pipeline construction before the guarded inference call.
+
+The corrected design adds separate bounded WebGPU initialization and inference watchdogs inside the model adapter. On certified desktop devices, a stall is converted to `webgpu-model-initialization-timeout` or `webgpu-inference-timeout` and the model is retried locally with WASM/q8. Mobile and unknown devices continue to reject the heavy fallback. Deterministic tests cover both stalled phases and both branches of that policy.
 
 ### Required CI after the experiment
 
