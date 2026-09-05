@@ -2,7 +2,15 @@ importScripts('./webgpu-runtime.js', './async-utils.js', './model-adapter.js', '
 
 const WEBGPU_INIT_TIMEOUT_MS = 2500;
 const modelAdapter = LocalAIModelAdapter.createFoundationAdapter();
-const visionAdapter = LocalAIVisionModelAdapter.createVisionAdapter({ navigatorLike: navigator, secureContext: self.isSecureContext });
+const workerParams = new URL(self.location.href).searchParams;
+const forceVisionWasm = workerParams.get('visionBackend') === 'wasm';
+const forcedFallbackReason = workerParams.get('fallbackReason') || 'webgpu-worker-timeout';
+const visionAdapter = LocalAIVisionModelAdapter.createVisionAdapter({
+  navigatorLike: navigator,
+  secureContext: self.isSecureContext,
+  preferWebGPU: !forceVisionWasm,
+  webGPUDisabledReason: forceVisionWasm ? forcedFallbackReason : null
+});
 let runtimePromise = null;
 let runtimeState = { backend: 'cpu-js', reason: 'not-initialized', capabilities: {} };
 

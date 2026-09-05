@@ -5,7 +5,7 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function () {
   'use strict';
 
-  const VERSION = '0.5.0';
+  const VERSION = '0.6.0';
   const TRANSFORMERS_VERSION = '3.8.1';
   const TRANSFORMERS_MODULE_URL = `https://cdn.jsdelivr.net/npm/@huggingface/transformers@${TRANSFORMERS_VERSION}`;
   const UNSUPPORTED_CODE = 'local-ai-device-not-supported';
@@ -125,6 +125,7 @@
     const navigatorLike = Object.prototype.hasOwnProperty.call(opts, 'navigatorLike') ? opts.navigatorLike : (typeof navigator !== 'undefined' ? navigator : null);
     const secureContext = Object.prototype.hasOwnProperty.call(opts, 'secureContext') ? opts.secureContext : (typeof isSecureContext === 'boolean' ? isSecureContext : true);
     const preferWebGPU = opts.preferWebGPU !== false;
+    const webGPUDisabledReason = opts.webGPUDisabledReason || 'webgpu-disabled';
     const webGPUProbeTimeoutMs = opts.webGPUProbeTimeoutMs || 2000;
     const modelId = opts.modelId || MODEL.id;
     const deviceClass = detectDeviceClass(navigatorLike, opts.deviceClass);
@@ -171,7 +172,7 @@
     async function compatibility() {
       const probe = preferWebGPU
         ? await probeWebGPU(navigatorLike, secureContext, webGPUProbeTimeoutMs)
-        : { usable: false, reason: 'webgpu-disabled' };
+        : { usable: false, reason: webGPUDisabledReason };
       lastDecision = decideExecution(probe, deviceClass, executionPolicy);
       return { ...lastDecision, fallbackMode: executionPolicy.fallbackMode };
     }

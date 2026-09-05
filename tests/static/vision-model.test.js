@@ -98,6 +98,23 @@ test('vision adapter initializes WASM directly only for a certified desktop fall
   assert.equal(result.fallbackReason, 'webgpu-unavailable');
 });
 
+test('forced desktop worker preserves the supervisor timeout as its fallback reason', async () => {
+  const fakeModule = {
+    env: {},
+    async pipeline() { return async () => [{ label: 'screen', score: 0.9 }]; }
+  };
+  const adapter = vision.createVisionAdapter({
+    moduleLoader: async () => fakeModule,
+    deviceClass: 'desktop',
+    navigatorLike: {},
+    preferWebGPU: false,
+    webGPUDisabledReason: 'webgpu-worker-timeout'
+  });
+  const result = await adapter.classify(new Blob(['x'], { type: 'image/png' }));
+  assert.equal(result.backend, 'wasm');
+  assert.equal(result.fallbackReason, 'webgpu-worker-timeout');
+});
+
 test('vision adapter rejects CPU/WASM fallback on mobile instead of running at any cost', async () => {
   let modelLoaded = false;
   const adapter = vision.createVisionAdapter({

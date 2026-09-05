@@ -2,6 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
+const vm = require('node:vm');
 const runtime = require('../../assets/local-ai/webgpu-runtime.js');
 const asyncUtils = require('../../assets/local-ai/async-utils.js');
 const modelAdapter = require('../../assets/local-ai/model-adapter.js');
@@ -109,6 +110,46 @@ test('async timeout utility resolves fast work and rejects stalled initializatio
   assert.equal(await asyncUtils.withTimeout(Promise.resolve('ready'), 50, 'timeout'), 'ready');
   const never = new Promise(() => {});
   await assert.rejects(asyncUtils.withTimeout(never, 5, 'webgpu-initialization-timeout'), error => error.code === 'webgpu-initialization-timeout');
+});
+
+test('client terminates an unresponsive WebGPU worker and retries in a forced-WASM worker', async () => {
+  const workers = [];
+  class FakeWorker {
+    constructor(url) {
+      this.url = url;
+      this.terminated = false;
+      workers.push(this);
+    }
+    postMessage(message) {
+      if (!this.url.includes('visionBackend=wasm')) return;
+      setTimeout(() => this.onmessage({
+        data: {
+          id: message.id,
+          ok: true,
+          type: 'classify-image',
+          backend: 'wasm',
+          fallbackReason: 'webgpu-worker-timeout',
+          predictions: [{ label: 'screen', score: 0.8 }]
+        }
+      }), 0);
+    }
+    terminate() { this.terminated = true; }
+  }
+  const source = fs.readFileSync(path.resolve(__dirname, '../../assets/local-ai/client.js'), 'utf8');
+  const context = { Worker: FakeWorker, Blob, setTimeout, clearTimeout };
+  vm.runInNewContext(source, context);
+  const client = new context.LocalAIClient({
+    workerFactory: url => new FakeWorker(url),
+    webGPUWorkerTimeoutMs: 10,
+    modelTimeoutMs: 100
+  });
+  const result = await client.classifyImage(new Blob(['x'], { type: 'image/png' }));
+  assert.equal(workers.length, 2);
+  assert.equal(workers[0].terminated, true);
+  assert.match(workers[1].url, /visionBackend=wasm/);
+  assert.equal(result.backend, 'wasm');
+  assert.equal(result.fallbackReason, 'webgpu-worker-timeout');
+  client.close();
 });
 
 test('human and AI handbook keeps the durable project foundations present and linked', () => {

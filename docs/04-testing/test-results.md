@@ -149,7 +149,9 @@ This proves that API/adapter preflight alone is insufficient. A real operator ca
 
 An initial corrective change guarded WebGPU inference, but physical retest `TEST-7C564B05` still reached the outer 120-second timeout. This proved the unresolved promise could occur during WebGPU pipeline construction before the guarded inference call.
 
-The corrected design adds separate bounded WebGPU initialization and inference watchdogs inside the model adapter. On certified desktop devices, a stall is converted to `webgpu-model-initialization-timeout` or `webgpu-inference-timeout` and the model is retried locally with WASM/q8. Mobile and unknown devices continue to reject the heavy fallback. Deterministic tests cover both stalled phases and both branches of that policy.
+The second corrective change added separate bounded WebGPU initialization and inference watchdogs inside the model adapter. Physical retest `TEST-6B2BF398` still reached `local-ai-worker-timeout` while Chrome displayed the same invalid `Transpose` pipeline, external-instance, and `GPUBuffer.mapAsync` errors. This proved the native failure could block the worker's JavaScript event loop, preventing watchdog timers located inside that worker from running.
+
+The authoritative recovery boundary is now `LocalAIClient` on the page. It supervises the WebGPU worker externally, terminates it after 30 seconds without a response, and starts a fresh worker that re-evaluates policy with reason `webgpu-worker-timeout`. Certified desktop devices retry locally with WASM/q8; mobile and unknown devices still reject the heavy fallback. Deterministic tests cover worker termination/restart as well as the adapter policy.
 
 ### Required CI after the experiment
 
