@@ -1,3 +1,12 @@
+---
+render: true
+title: Local AI Models
+description: Experimental local AI model, execution-policy, and fallback architecture for Clean Local Tools.
+route: /docs/architecture/local-ai-models/
+index: false
+section: Technical documentation
+---
+
 # Local AI Models
 
 ## Purpose

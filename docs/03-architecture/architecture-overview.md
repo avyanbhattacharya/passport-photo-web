@@ -1,3 +1,12 @@
+---
+render: true
+title: Architecture Overview
+description: Technical overview of the browser-local Clean Local Tools architecture.
+route: /docs/architecture/
+index: false
+section: Technical documentation
+---
+
 # Architecture Overview
 
 ## Purpose

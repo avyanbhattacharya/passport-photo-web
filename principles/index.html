@@ -1,0 +1,70 @@
+<!doctype html>
+<!-- Generated from docs/01-purpose/principles.md by scripts/build-docs.js. Do not edit directly. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#ffffff">
+<meta name="description" content="The privacy, simplicity, accessibility, and engineering principles behind Clean Local Tools. Your files never leave your machine.">
+<meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1">
+<link rel="canonical" href="https://cleanlocaltools.com/principles/">
+<meta property="og:title" content="Project Principles | Clean Local Tools">
+<meta property="og:description" content="The privacy, simplicity, accessibility, and engineering principles behind Clean Local Tools. Your files never leave your machine.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://cleanlocaltools.com/principles/">
+<meta property="og:site_name" content="Clean Local Tools">
+<title>Project Principles | Clean Local Tools</title>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"Project Principles","description":"The privacy, simplicity, accessibility, and engineering principles behind Clean Local Tools. Your files never leave your machine.","url":"https://cleanlocaltools.com/principles/","isPartOf":{"@type":"WebSite","name":"Clean Local Tools","url":"https://cleanlocaltools.com/"}}</script>
+<link rel="stylesheet" href="/assets/style.css">
+<link rel="stylesheet" href="/assets/docs.css">
+</head>
+<body class="docs-page">
+<header class="doc-topbar"><div class="wrap"><div class="doc-brand"><a href="/">Clean Local Tools</a></div><nav aria-label="Primary"><a href="/#all-tools">All tools</a><a href="/about/">About</a></nav></div></header>
+<main class="doc-main"><div class="wrap"><article class="doc-article"><div class="doc-kicker">About Clean Local Tools</div><div class="doc-content"><h1 id="project-principles">Project Principles</h1>
+<p>These principles are constraints on product and engineering decisions. A future maintainer should preserve them unless there is a deliberate, documented project-level decision to change the project&#39;s purpose.</p>
+<h2 id="1-build-for-people-not-data-extraction">1. Build for people, not data extraction</h2>
+<p>Clean Local Tools exists to provide useful tools. The user is the customer or beneficiary, not a source of behavioral data to harvest.</p>
+<p>Do not introduce a business model whose value depends on collecting, selling, sharing, or profiling users&#39; personal information.</p>
+<h2 id="2-prefer-local-processing">2. Prefer local processing</h2>
+<p>When a task can be performed safely and reasonably in the browser, process the user&#39;s working data on the user&#39;s device.</p>
+<p>Remote processing is not automatically forbidden for every imaginable future feature, but it must never be smuggled into a tool that promises local-only file processing. Any architectural exception requires explicit documentation, a clear user choice, and privacy wording that accurately describes the behavior.</p>
+<h2 id="3-no-advertising-as-a-product-dependency">3. No advertising as a product dependency</h2>
+<p>The intended experience is free of display advertising and ad-driven interface design. Do not make the tools noisy, deceptive, or deliberately inconvenient to increase ad impressions.</p>
+<p>Voluntary support or other future funding mechanisms should not compromise the core utility or privacy model.</p>
+<h2 id="4-no-unnecessary-accounts">4. No unnecessary accounts</h2>
+<p>A utility that does not need identity should not require identity. Avoid login walls, email capture, or registration merely to increase engagement metrics.</p>
+<h2 id="5-privacy-is-architecture">5. Privacy is architecture</h2>
+<p>A privacy policy cannot compensate for an architecture that unnecessarily sends private files away from the user&#39;s device.</p>
+<p>Privacy claims should be supported by implementation, network behavior, code review, and tests wherever practical.</p>
+<h2 id="6-plain-language-before-jargon">6. Plain language before jargon</h2>
+<p>Users should understand what happens to their files without knowing what WebGPU, WebAssembly, a CDN, or a Web Worker is.</p>
+<p>Technical documentation should still be precise enough for engineers and AI agents to reproduce and verify the implementation.</p>
+<h2 id="7-progressive-enhancement-and-graceful-fallback">7. Progressive enhancement and graceful fallback</h2>
+<p>Cutting-edge browser capabilities are welcome when they create meaningful value, but a new API should not casually turn unsupported browsers into dead ends.</p>
+<p>Prefer capability detection and an explicit fallback path. For local AI, WebGPU is an acceleration path where supported. CPU/WASM fallback is available only when the specific model and device class have been explicitly judged reasonable for that workload.</p>
+<h2 id="8-local-first-does-not-mean-run-at-any-cost">8. Local-first does not mean run at any cost</h2>
+<p>A private local feature should not punish the user&#39;s device merely because a slow fallback is technically possible.</p>
+<p>For compute-intensive AI, each model must declare an execution policy. The policy determines which accelerated backend is preferred, which fallback backends are permitted, and on which device classes those fallbacks are acceptable.</p>
+<p>If the required local execution path is unavailable or is expected to be unreasonably slow, memory-heavy, battery-intensive, or thermally expensive, the correct product behavior may be to stop cleanly and say that the AI feature is not supported on that device or browser yet.</p>
+<p>Do not silently replace an unsupported local path with remote/cloud processing.</p>
+<p>User-facing compatibility messages should be plain language first. Technical backend details may be shown separately for diagnostics.</p>
+<h2 id="9-do-not-confuse-novelty-with-usefulness">9. Do not confuse novelty with usefulness</h2>
+<p>New browser technology is valuable only when it improves a real task. Avoid turning the product into a browser-API demonstration gallery.</p>
+<h2 id="10-test-meaningful-changes">10. Test meaningful changes</h2>
+<p>Every meaningful production change should be covered by an existing automated test or should add/update a regression test alongside the change.</p>
+<p>Tests should protect user-visible behavior, privacy invariants, architecture constraints, responsive behavior, browser compatibility, and important failure paths.</p>
+<h2 id="11-keep-operations-simple">11. Keep operations simple</h2>
+<p>The static architecture is a feature. Avoid adding servers, databases, queues, accounts, secrets, or recurring infrastructure unless they solve a problem that cannot reasonably be solved within the local-first model.</p>
+<p>Operational simplicity lowers cost and makes long-term survival more likely.</p>
+<h2 id="12-avoid-single-person-knowledge">12. Avoid single-person knowledge</h2>
+<p>If only one person knows how something works, it is unfinished.</p>
+<p>Important architecture, deployment, DNS, CI, recovery, dependency, and maintenance information belongs in version-controlled documentation.</p>
+<h2 id="13-preserve-user-identity-in-identity-document-tools">13. Preserve user identity in identity-document tools</h2>
+<p>Passport and identity-photo utilities must not use generative techniques to reconstruct, beautify, or invent facial identity. Deterministic operations such as crop, geometry, brightness/contrast, segmentation, and print layout may be used when appropriate, with clear limitations.</p>
+<h2 id="decision-filter-for-a-new-tool">Decision filter for a new tool</h2>
+<p>Before adding a tool, ask:</p>
+<ol><li>Is this useful to an ordinary person?</li><li>Is there a meaningful privacy advantage to doing it locally?</li><li>Can the browser perform it reliably enough?</li><li>Can unsupported capabilities degrade gracefully or fail clearly?</li><li>For compute-heavy features, has the fallback workload been explicitly approved for the target device class?</li><li>Can we test the important workflow?</li><li>Does it fit naturally with the existing private-tool ecosystem?</li><li>Can a future maintainer understand and operate it without private knowledge?</li></ol>
+<p>A tool does not need a perfect answer to every question, but serious exceptions should be explicit rather than accidental.</p></div><nav class="doc-related" aria-label="Related pages"><a href="/">Home</a><a href="/about/">Mission &amp; vision</a><a href="/principles/">Principles</a></nav></article></div></main>
+<footer class="doc-footer"><div class="wrap"><span>© 2026 Clean Local Tools · Your files never leave your machine.</span><a href="/about/">About</a></div></footer>
+</body>
+</html>

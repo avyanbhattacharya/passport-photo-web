@@ -1,3 +1,12 @@
+---
+render: true
+title: Clean Local Tools Handbook
+description: Technical product and architecture documentation for Clean Local Tools.
+route: /docs/
+index: false
+section: Handbook
+---
+
 # Clean Local Tools Handbook
 
 This directory is the durable human-and-AI-readable handbook for Clean Local Tools.

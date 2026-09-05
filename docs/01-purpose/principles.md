@@ -1,3 +1,12 @@
+---
+render: true
+title: Project Principles
+description: The privacy, simplicity, accessibility, and engineering principles behind Clean Local Tools. Your files never leave your machine.
+route: /principles/
+index: true
+section: About Clean Local Tools
+---
+
 # Project Principles
 
 These principles are constraints on product and engineering decisions. A future maintainer should preserve them unless there is a deliberate, documented project-level decision to change the project's purpose.

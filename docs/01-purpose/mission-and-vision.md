@@ -1,3 +1,12 @@
+---
+render: true
+title: Mission and Vision
+description: Why Clean Local Tools builds simple, private utilities that work on your device. Your files never leave your machine.
+route: /about/
+index: true
+section: About Clean Local Tools
+---
+
 # Mission and Vision
 
 ## Mission

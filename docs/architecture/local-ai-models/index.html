@@ -1,0 +1,126 @@
+<!doctype html>
+<!-- Generated from docs/03-architecture/local-ai-models.md by scripts/build-docs.js. Do not edit directly. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#ffffff">
+<meta name="description" content="Experimental local AI model, execution-policy, and fallback architecture for Clean Local Tools.">
+<meta name="robots" content="noindex,follow,noarchive">
+<link rel="canonical" href="https://cleanlocaltools.com/docs/architecture/local-ai-models/">
+<meta property="og:title" content="Local AI Models | Clean Local Tools">
+<meta property="og:description" content="Experimental local AI model, execution-policy, and fallback architecture for Clean Local Tools.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://cleanlocaltools.com/docs/architecture/local-ai-models/">
+<meta property="og:site_name" content="Clean Local Tools">
+<title>Local AI Models | Clean Local Tools</title>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"Local AI Models","description":"Experimental local AI model, execution-policy, and fallback architecture for Clean Local Tools.","url":"https://cleanlocaltools.com/docs/architecture/local-ai-models/","isPartOf":{"@type":"WebSite","name":"Clean Local Tools","url":"https://cleanlocaltools.com/"}}</script>
+<link rel="stylesheet" href="/assets/style.css">
+<link rel="stylesheet" href="/assets/docs.css">
+</head>
+<body class="docs-page">
+<header class="doc-topbar"><div class="wrap"><div class="doc-brand"><a href="/">Clean Local Tools</a></div><nav aria-label="Primary"><a href="/#all-tools">All tools</a><a href="/about/">About</a></nav></div></header>
+<main class="doc-main"><div class="wrap"><article class="doc-article"><div class="doc-kicker">Technical documentation</div><aside class="doc-status"><strong>Technical documentation</strong><span>This page records architecture and experimental direction. It is not a user-facing tool.</span></aside><div class="doc-content"><h1 id="local-ai-models">Local AI Models</h1>
+<h2 id="purpose">Purpose</h2>
+<p>This document records the concrete model/runtime choices behind Clean Local Tools local AI so future humans and AI agents do not need to reconstruct them from code or chat history.</p>
+<p><strong>Implementation status:</strong> experimental and not deployed from <code>main</code>. The reference code, tests, and physical-hardware evidence described below live on <code>test/webgpu-hardware-preview-v1</code>. This document is promoted separately so the architectural decisions and lessons survive while production code remains unchanged.</p>
+<h2 id="architecture-rule">Architecture rule</h2>
+<p>Product features should request a semantic operation through a model adapter. They should not directly instantiate a model framework, GPU device, or remote AI service.</p>
+<pre><code class="language-text">Tool
+  |
+LocalAIClient
+  |
+Web Worker
+  |
+Model adapter
+  |
+Runtime / framework
+  |
++-------------------+-------------------+
+|                                       |
+WebGPU preferred                         local fallback
+                                         WASM / CPU</code></pre>
+<p>The user&#39;s working input remains inside the browser processing boundary. Downloading model/framework assets does not mean the user&#39;s input is uploaded for inference.</p>
+<h2 id="foundation-model">Foundation model</h2>
+<p>The first model is intentionally tiny and deterministic:</p>
+<ul><li>ID: <code>clean-local-tools-foundation-mlp-v1</code></li><li>Task: <code>foundation-classification-probe</code></li><li>Purpose: verify worker messaging, WebGPU compute, deterministic output, timeouts, and CPU fallback</li><li>Production value: none by itself; it is an engineering probe</li></ul>
+<p>This model is embedded in repository JavaScript and therefore requires no model download.</p>
+<h2 id="first-real-pretrained-model">First real pretrained model</h2>
+<p>The first real pretrained model is an image classifier:</p>
+<ul><li>Model ID: <code>onnx-community/mobilenetv4_conv_small.e2400_r224_in1k</code></li><li>Task: image classification</li><li>Adapter: <code>assets/local-ai/vision-model-adapter.js</code></li><li>Framework: Transformers.js</li><li>Pinned framework version: <code>3.8.1</code></li><li>Preferred execution: WebGPU</li><li>Current WebGPU dtype: <code>fp32</code></li><li>Local fallback: ONNX Runtime Web WASM through Transformers.js</li><li>Current fallback dtype: <code>q8</code></li><li>Input contract: browser <code>Blob</code>/<code>File</code></li><li>Output contract: ranked <code>{label, score}</code> predictions</li><li>Status: experimental engineering capability, not yet a public Clean Local Tools product</li></ul>
+<p>Why MobileNetV4 was selected for this stage:</p>
+<ol><li>It is a genuine pretrained vision model rather than a synthetic compute probe.</li><li>Hugging Face documents this model specifically as a Transformers.js WebGPU image-classification example.</li><li>Image classification gives us a clear, inspectable result while exercising preprocessing, real model loading, inference, WebGPU, and WASM fallback.</li><li>It is small enough to be a reasonable first browser model compared with a browser LLM or large multimodal model.</li><li>It establishes a reusable pattern before we choose a more product-specific document model.</li></ol>
+<p>ImageNet labels are general-purpose object categories, so this model should <strong>not</strong> be mistaken for a document-understanding product. Its role is to prove the real-model execution architecture.</p>
+<h2 id="asset-flow">Asset flow</h2>
+<p>On first real-model use, the browser may retrieve:</p>
+<ul><li>pinned Transformers.js application code from jsDelivr;</li><li>ONNX/model configuration and weight assets from the Hugging Face Hub;</li><li>ONNX Runtime Web/WASM support assets required by Transformers.js.</li></ul>
+<p>The exact bytes downloaded depend on framework/model/backend/dtype behavior. Do not hard-code a download-size marketing claim without measuring the exact deployed configuration.</p>
+<p>The selected local image is passed as a browser <code>Blob</code> into the worker and then to the local inference pipeline. The adapter contains no cloud-inference API or upload fallback.</p>
+<h2 id="lazy-loading">Lazy loading</h2>
+<p>The real vision model is opt-in and lazy loaded.</p>
+<p>Calling <code>visionStatus()</code> must not download Transformers.js or model weights. Downloads begin only when image classification is explicitly requested.</p>
+<p>This matters for performance, privacy clarity, and ordinary users who never use AI functionality.</p>
+<h2 id="backend-selection">Backend selection</h2>
+<p>Current selection behavior:</p>
+<pre><code class="language-text">secure context + navigator.gpu available?
+           |
+          yes
+           v
+start model work in a disposable
+WebGPU worker supervised by the page
+     | success
+     v
+classify with a bounded
+30-second WebGPU attempt
+     |
+ WebGPU rejection or adapter watchdog
+ timeout while the worker remains responsive
+     v
+re-evaluate model policy
+     |
+certified desktop -&gt; rebuild as WASM
+mobile / unknown -&gt; unsupported
+
+worker event loop blocked for 30 seconds
+           |
+           v
+page terminates the frozen GPU worker
+           |
+           v
+fresh worker re-evaluates policy with
+reason: webgpu-worker-timeout
+
+no WebGPU / WebGPU initialization failure
+           |
+           v
+       WASM pipeline</code></pre>
+<p>No remote inference service is used as a fallback.</p>
+<h3 id="stalled-or-lost-webgpu-devices">Stalled or lost WebGPU devices</h3>
+<p>A successful <code>requestAdapter()</code> probe proves that a browser can expose a GPU adapter; it does not prove that every operator in a real model can initialize or execute on that adapter. A physical macOS/Chrome test demonstrated that the Metal-backed WebGPU device can become invalid while ONNX Runtime creates or executes a model operator. In that failure mode, either the pipeline-construction promise or the inference promise may remain pending instead of rejecting promptly.</p>
+<p>The vision adapter places separate 30-second watchdogs around WebGPU pipeline construction and WebGPU inference. Those adapter timers handle asynchronous promises while the worker event loop is healthy. Physical retesting showed that a native Metal/Dawn failure can also block the worker event loop itself, preventing timers inside that worker from firing.</p>
+<p><code>LocalAIClient</code> therefore provides the authoritative watchdog across the worker boundary. When a WebGPU-selected classification worker does not answer within 30 seconds, the page:</p>
+<ol><li>terminates the unresponsive worker, cancelling the inaccessible native GPU work;</li><li>starts a fresh worker explicitly requesting local WASM policy evaluation;</li><li>passes <code>webgpu-worker-timeout</code> as the fallback reason;</li><li>retries the same local image within the remaining overall operation deadline.</li></ol>
+<p>The forced-WASM worker does not bypass model policy. It classifies the device again: certified desktop devices may run WASM/q8, while mobile and unknown devices return <code>local-ai-device-not-supported</code>.</p>
+<p>If WebGPU initialization or inference rejects or the worker supervisor expires:</p>
+<ul><li>the failure reason is retained (<code>webgpu-model-initialization-timeout</code>, <code>webgpu-inference-timeout</code>, or <code>webgpu-worker-timeout</code>);</li><li>the model execution policy is evaluated again;</li><li>certified desktop-class devices rebuild the pipeline with WASM/q8 and retry locally;</li><li>mobile and unknown devices do not run the unapproved heavy fallback and return <code>local-ai-device-not-supported</code>;</li><li>no remote inference fallback is introduced.</li></ul>
+<p>The cross-worker supervisor can cancel otherwise inaccessible native work by terminating the worker. Future runtime integrations should still prefer abortable initialization/inference APIs when available.</p>
+<h2 id="safari-strategy">Safari strategy</h2>
+<p>Safari compatibility is pursued through progressive enhancement, not browser-name detection.</p>
+<p>If a Safari/WebKit environment exposes usable WebGPU and the model/runtime successfully initializes, the WebGPU path may be used. Otherwise the architecture falls back to WASM where supported.</p>
+<p>Automated Playwright WebKit coverage verifies that the application and lazy model contract behave correctly in WebKit. It does not prove physical Safari GPU execution on every Mac/iPhone generation.</p>
+<p>Real-device Safari/WebGPU validation should be recorded separately when performed.</p>
+<h2 id="testing-strategy">Testing strategy</h2>
+<p>Required CI intentionally does <strong>not</strong> download the external model on every run. That would make the core quality gate dependent on large external network assets and reduce reliability.</p>
+<p>Instead:</p>
+<ul><li>static tests inject fake workers and a fake Transformers.js module to prove WebGPU preference, worker termination/restart, WASM fallback, initialization/inference rejection fallback, stalled-initialization and stalled-inference behavior, mobile/unknown rejection, input handling, pinned metadata, and result normalization;</li><li>browser tests prove the worker exposes the real-model semantic contract;</li><li>browser tests prove model assets are not downloaded merely by opening the lab or querying model status;</li><li>existing foundation inference continues to prove real worker execution without external dependencies.</li></ul>
+<p>A separate real-model smoke should be run for model/framework upgrades and before promoting the capability into a public tool. That smoke must verify an actual image result and record browser/backend/runtime evidence.</p>
+<h2 id="upgrade-procedure">Upgrade procedure</h2>
+<p>Before changing model ID, Transformers.js version, backend options, or dtype:</p>
+<ol><li>Read the current adapter and this document.</li><li>Review upstream release/model notes and license information.</li><li>Update adapter metadata and implementation together.</li><li>Update deterministic static tests.</li><li>Run a real-model smoke in at least Chromium.</li><li>Test WebKit/Safari fallback behavior.</li><li>Measure first-load download/performance if the capability is moving toward production.</li><li>Update this document with the new evidence.</li><li>Require normal CI to pass.</li></ol>
+<p>Do not change a CDN URL to an unpinned <code>latest</code> reference.</p>
+<h2 id="next-model-criteria">Next model criteria</h2>
+<p>The next model should be chosen for user value rather than novelty. Strong candidates should satisfy most of these properties:</p>
+<ul><li>solves a common document/image problem;</li><li>has a strong privacy advantage when run locally;</li><li>has manageable browser download and memory cost;</li><li>supports WebGPU and a local fallback;</li><li>has a clear license and provenance;</li><li>can be tested deterministically enough for long-term maintenance;</li><li>produces value ordinary users can understand without knowing AI terminology.</li></ul></div><nav class="doc-related" aria-label="Related pages"><a href="/">Home</a><a href="/about/">Mission &amp; vision</a><a href="/principles/">Principles</a></nav></article></div></main>
+<footer class="doc-footer"><div class="wrap"><span>© 2026 Clean Local Tools · Your files never leave your machine.</span><a href="/about/">About</a></div></footer>
+</body>
+</html>

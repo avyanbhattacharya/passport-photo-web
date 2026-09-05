@@ -1,0 +1,128 @@
+<!doctype html>
+<!-- Generated from docs/03-architecture/lld.md by scripts/build-docs.js. Do not edit directly. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#ffffff">
+<meta name="description" content="Implementation conventions and invariants for Clean Local Tools.">
+<meta name="robots" content="noindex,follow,noarchive">
+<link rel="canonical" href="https://cleanlocaltools.com/docs/architecture/lld/">
+<meta property="og:title" content="Low-Level Design | Clean Local Tools">
+<meta property="og:description" content="Implementation conventions and invariants for Clean Local Tools.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://cleanlocaltools.com/docs/architecture/lld/">
+<meta property="og:site_name" content="Clean Local Tools">
+<title>Low-Level Design | Clean Local Tools</title>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"Low-Level Design","description":"Implementation conventions and invariants for Clean Local Tools.","url":"https://cleanlocaltools.com/docs/architecture/lld/","isPartOf":{"@type":"WebSite","name":"Clean Local Tools","url":"https://cleanlocaltools.com/"}}</script>
+<link rel="stylesheet" href="/assets/style.css">
+<link rel="stylesheet" href="/assets/docs.css">
+</head>
+<body class="docs-page">
+<header class="doc-topbar"><div class="wrap"><div class="doc-brand"><a href="/">Clean Local Tools</a></div><nav aria-label="Primary"><a href="/#all-tools">All tools</a><a href="/about/">About</a></nav></div></header>
+<main class="doc-main"><div class="wrap"><article class="doc-article"><div class="doc-kicker">Technical documentation</div><aside class="doc-status"><strong>Technical documentation</strong><span>This page records architecture and experimental direction. It is not a user-facing tool.</span></aside><div class="doc-content"><h1 id="low-level-design-lld">Low-Level Design (LLD)</h1>
+<h2 id="purpose">Purpose</h2>
+<p>This document describes implementation-level conventions and invariants that should survive individual refactors. It is intentionally a living document. When a subsystem becomes complex enough to deserve its own LLD, link that document from here.</p>
+<p><strong>Status on <code>main</code>:</strong> ordinary browser-local tool conventions apply to production. Local AI contracts and model-specific details document the isolated <code>test/webgpu-hardware-preview-v1</code> experiment and are retained here as design constraints, not as a claim that the runtime is deployed on <code>main</code>.</p>
+<h2 id="repository-model">Repository model</h2>
+<p>Public tools are generally directory-based routes containing their own browser application assets. Shared infrastructure should be placed in clearly named shared locations rather than copied into every tool once reuse becomes meaningful.</p>
+<p>Before modifying an existing file, read the current branch version first. Do not reconstruct a large production file from an old copy or partial tool output.</p>
+<h2 id="local-file-lifecycle">Local file lifecycle</h2>
+<p>A local file tool should generally follow this lifecycle:</p>
+<ol><li>Obtain a <code>File</code> only after user selection/drop/camera action.</li><li>Validate type/size/format as early as practical.</li><li>Decode/process inside browser memory or explicitly documented local browser storage.</li><li>Avoid network APIs for the working file.</li><li>Produce output using a <code>Blob</code>, Canvas export, PDF library output, or equivalent local representation.</li><li>Create a temporary object URL where needed.</li><li>Trigger an explicit download/print/user action.</li><li>Revoke object URLs and release large references when they are no longer required.</li></ol>
+<p>The original input must not be modified on disk by surprise.</p>
+<h2 id="main-thread-rule">Main-thread rule</h2>
+<p>UI responsiveness matters. Small deterministic operations can run on the main thread. Work likely to produce noticeable blocking should be evaluated for a Web Worker or another browser-supported off-main-thread mechanism.</p>
+<p>AI inference should normally sit behind a worker boundary.</p>
+<h2 id="local-ai-message-boundary">Local AI message boundary</h2>
+<p>The local AI client and worker should communicate using explicit message shapes. Message types should be stable, versionable if necessary, and testable without requiring every tool to understand backend internals.</p>
+<p>Conceptual contract:</p>
+<pre><code class="language-text">Tool
+  -&gt; request(operation, input, options)
+Local AI client
+  -&gt; worker message { id, operation, payload }
+Worker
+  -&gt; evaluate compatibility/execution policy
+  -&gt; choose/initialize backend
+  -&gt; execute model/operation
+  -&gt; response { id, ok, backend, result | structured error }
+Client
+  -&gt; resolve/reject original request</code></pre>
+<p>Structured compatibility errors should preserve a stable machine-readable code such as <code>local-ai-device-not-supported</code> in addition to a human-readable message.</p>
+<h2 id="webgpu-initialization">WebGPU initialization</h2>
+<p>WebGPU must be capability-detected rather than inferred from a browser user-agent string.</p>
+<p>API presence alone is insufficient. A model that depends on WebGPU must perform a bounded adapter preflight because some environments expose <code>navigator.gpu</code> while still failing to return a usable adapter.</p>
+<p>Conceptual sequence:</p>
+<pre><code class="language-text">Is navigator.gpu available?
+        |
+       no
+        |
+        v
+ evaluate model fallback policy
+
+navigator.gpu available
+        |
+        v
+request adapter with timeout
+        |
+ adapter unavailable/failure
+        |
+        v
+ evaluate model fallback policy
+
+adapter available
+        |
+        v
+initialize WebGPU model/backend</code></pre>
+<p>Initialization must be bounded. A browser/driver that exposes an API but fails to initialize correctly must not leave the user waiting indefinitely.</p>
+<p>Backend selection should be observable for tests and diagnostics, but ordinary users should not need to understand GPU terminology to use a tool.</p>
+<h2 id="model-adapter-direction">Model adapter direction</h2>
+<p>Tools should request semantic operations rather than instantiate a specific AI framework directly.</p>
+<p>Prefer:</p>
+<pre><code class="language-text">feature -&gt; model adapter -&gt; execution policy -&gt; runtime/backend</code></pre>
+<p>Avoid:</p>
+<pre><code class="language-text">feature -&gt; framework-specific global object -&gt; hard-coded model/CDN/GPU assumptions</code></pre>
+<p>This makes it possible to change model format, inference library, hosting, caching, or acceleration strategy without rewriting every tool.</p>
+<h2 id="execution-policy">Execution policy</h2>
+<p>Each compute-intensive model must declare its acceptable execution paths. The policy is part of the model contract, not a generic global fallback switch.</p>
+<p>At minimum, document:</p>
+<ul><li>preferred backend;</li><li>allowed fallback backend(s);</li><li>fallback mode such as <code>always</code>, <code>desktop-only</code>, or <code>never</code>;</li><li>supported/unsupported device classes;</li><li>model-specific performance evidence used to approve a fallback;</li><li>stable unsupported error code.</li></ul>
+<p>The current experimental MobileNetV4 adapter uses:</p>
+<pre><code class="language-text">preferred backend: WebGPU
+fallback backend: WASM
+fallback policy: desktop-only
+unsupported code: local-ai-device-not-supported</code></pre>
+<p>Device classification should avoid brittle browser-name checks. The current adapter accepts an explicit device class when the caller has one and otherwise uses <code>navigator.userAgentData.mobile</code> where available. If the device class cannot be established and the fallback is only certified for desktop, the conservative result is unsupported rather than assuming the heavy CPU path is safe.</p>
+<p>This conservative behavior is deliberate.</p>
+<h2 id="fallback-behavior">Fallback behavior</h2>
+<p>Fallback is part of the feature, not an exception handler added at the end.</p>
+<p>When WebGPU is unavailable, adapter acquisition fails, model initialization fails, or GPU inference fails, the model adapter must re-evaluate the execution policy before switching backends.</p>
+<p>Do <strong>not</strong> automatically run CPU/WASM merely because it exists.</p>
+<p>For a model whose fallback is not approved on the current device class:</p>
+<ol><li>stop before loading the heavy fallback where possible;</li><li>return <code>local-ai-device-not-supported</code>;</li><li>explain in plain language that the feature needs supported browser/device acceleration or an approved local fallback;</li><li>reassure the user that the file was not uploaded or sent to a cloud fallback.</li></ol>
+<p>Do not silently send the work to a remote AI service as a fallback for a local-only feature.</p>
+<h2 id="browser-storage">Browser storage</h2>
+<p>Temporary in-memory processing is preferred by default.</p>
+<p>If IndexedDB, Cache Storage, OPFS, or another persistent local store is introduced:</p>
+<ul><li>state why persistence is needed;</li><li>document what is stored;</li><li>document lifetime/cleanup;</li><li>avoid storing sensitive working files longer than necessary;</li><li>provide a clearing path when appropriate;</li><li>add tests for the persistence contract.</li></ul>
+<h2 id="external-dependencies">External dependencies</h2>
+<p>For every runtime dependency that can affect a tool:</p>
+<ul><li>pin or otherwise control the version where feasible;</li><li>know the source URL or self-hosted path;</li><li>understand license obligations;</li><li>avoid dynamic latest-version URLs;</li><li>consider what happens if the dependency cannot be downloaded;</li><li>do not claim Offline Ready unless the dependency is available offline in the tested workflow.</li></ul>
+<h2 id="errors">Errors</h2>
+<p>User-facing errors should answer, in plain language:</p>
+<ul><li>what could not be done;</li><li>whether the original file is safe/unchanged;</li><li>what the user can try next.</li></ul>
+<p>Diagnostic details may be logged for development, but do not log private file contents or extracted sensitive information.</p>
+<p>For unsupported local AI, the preferred user-facing shape is equivalent to:</p>
+<blockquote><p>This AI feature isn&#39;t supported on this device yet. It requires browser hardware acceleration, or an explicitly certified local fallback, to run privately and efficiently. Your file has not been uploaded or processed elsewhere.</p></blockquote>
+<h2 id="identity-photo-constraint">Identity-photo constraint</h2>
+<p>Passport-photo processing must not regenerate facial identity. Keep deterministic image operations separate from generative AI experimentation.</p>
+<h2 id="performance-constraints">Performance constraints</h2>
+<p>Large browser-local files can create memory pressure. Avoid unnecessary full-size copies and base64 expansion when Blob/ArrayBuffer/object-URL workflows are available.</p>
+<p>Compute-heavy models need measured fallback evidence before a device class is certified. “It eventually finishes” is not sufficient evidence.</p>
+<p>Performance optimization must not weaken correctness or privacy behavior.</p>
+<h2 id="definition-of-implementation-completeness">Definition of implementation completeness</h2>
+<p>A new subsystem is not complete until:</p>
+<ul><li>behavior exists;</li><li>failure/fallback paths are defined;</li><li>compute policy is explicit for heavy local models;</li><li>tests cover meaningful behavior;</li><li>CI is green;</li><li>relevant architecture/operations docs are updated;</li><li>user-facing privacy and compatibility claims accurately describe the implementation.</li></ul></div><nav class="doc-related" aria-label="Related pages"><a href="/">Home</a><a href="/about/">Mission &amp; vision</a><a href="/principles/">Principles</a></nav></article></div></main>
+<footer class="doc-footer"><div class="wrap"><span>© 2026 Clean Local Tools · Your files never leave your machine.</span><a href="/about/">About</a></div></footer>
+</body>
+</html>

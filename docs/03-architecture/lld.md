@@ -1,3 +1,12 @@
+---
+render: true
+title: Low-Level Design
+description: Implementation conventions and invariants for Clean Local Tools.
+route: /docs/architecture/lld/
+index: false
+section: Technical documentation
+---
+
 # Low-Level Design (LLD)
 
 ## Purpose

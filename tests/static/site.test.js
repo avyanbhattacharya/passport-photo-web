@@ -19,9 +19,11 @@ const pages = [
   ['/split-pdf/', 'split-pdf/index.html', 'https://cleanlocaltools.com/split-pdf/'],
   ['/heic-to-jpg/', 'heic-to-jpg/index.html', 'https://cleanlocaltools.com/heic-to-jpg/'],
   ['/remove-photo-metadata/', 'remove-photo-metadata/index.html', 'https://cleanlocaltools.com/remove-photo-metadata/'],
-  ['/qr-code-maker/', 'qr-code-maker/index.html', 'https://cleanlocaltools.com/qr-code-maker/']
+  ['/qr-code-maker/', 'qr-code-maker/index.html', 'https://cleanlocaltools.com/qr-code-maker/'],
+  ['/about/', 'about/index.html', 'https://cleanlocaltools.com/about/'],
+  ['/principles/', 'principles/index.html', 'https://cleanlocaltools.com/principles/']
 ];
-const homepageRoutes = pages.slice(1).map(([route]) => route).filter(route => route !== '/japa-counter/tap.html');
+const homepageRoutes = pages.slice(1).map(([route]) => route).filter(route => !['/japa-counter/tap.html','/about/','/principles/'].includes(route));
 const brandedFilePages = ['compress-pdf/index.html','merge-pdf/index.html','clean-pdf-printer/index.html','document-flattener/index.html','image-to-pdf/index.html','split-pdf/index.html','heic-to-jpg/index.html','remove-photo-metadata/index.html'];
 function read(relative){return fs.readFileSync(path.join(root, relative), 'utf8');}
 function appSourceFor(htmlPath){const appPath=path.join(path.dirname(htmlPath),'app.js'),absolute=path.join(root,appPath);return fs.existsSync(absolute)?fs.readFileSync(absolute,'utf8'):'';}
@@ -61,4 +63,44 @@ test('homepage brand documentation preserves approved mission and experimental A
       relative+' must identify the isolated experimental implementation');
   }
   assert.ok(read('docs/03-architecture/local-ai-models.md').includes('experimental and not deployed from `main`'));
+});
+
+test('homepage generated documentation respects public and technical publishing boundaries',()=>{
+  const homepage=read('index.html');
+  assert.ok(homepage.includes('href="/about/"'),'homepage should link to About');
+  for(const relative of ['about/index.html','principles/index.html']){
+    const html=read(relative);
+    assert.ok(html.includes('Generated from docs/'),relative+' should identify its Markdown source');
+    assert.ok(html.includes('/assets/style.css'),relative+' should use the shared site styles');
+    assert.ok(html.includes('/assets/docs.css'),relative+' should use the documentation styles');
+    assert.doesNotMatch(html,/content="[^"]*noindex/i,relative+' should be indexable');
+  }
+  const technical=[
+    'docs/index.html',
+    'docs/architecture/index.html',
+    'docs/architecture/hld/index.html',
+    'docs/architecture/lld/index.html',
+    'docs/architecture/local-ai-models/index.html'
+  ];
+  const sitemap=read('sitemap.xml');
+  for(const relative of technical){
+    const html=read(relative);
+    assert.match(html,/<meta name="robots" content="noindex,follow,noarchive">/,relative+' should remain out of search');
+    const canonical=html.match(/<link rel="canonical" href="([^"]+)">/);
+    assert.ok(canonical,relative+' canonical missing');
+    assert.ok(!sitemap.includes(`<loc>${canonical[1]}</loc>`),relative+' should not be in sitemap');
+  }
+});
+
+test('CI keeps generated documentation reproducible',()=>{
+  const workflow=read('.github/workflows/tests.yml');
+  const pkg=JSON.parse(read('package.json'));
+  assert.ok(workflow.includes('name: Generated documentation'));
+  assert.ok(workflow.includes('run: |'));
+  assert.ok(workflow.includes('npm run build:docs'));
+  assert.ok(workflow.includes('git diff --exit-code -- about principles docs sitemap.xml'));
+  assert.ok(workflow.includes('npm run test:docs'));
+  assert.equal(pkg.scripts['build:docs'],'node scripts/build-docs.js --write');
+  assert.equal(pkg.scripts['check:docs'],'node scripts/build-docs.js --check');
+  assert.equal(pkg.scripts['test:docs'],'node --test tests/static/docs-build.test.js');
 });

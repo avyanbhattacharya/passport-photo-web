@@ -14,7 +14,9 @@ const tools = [
   ['/split-pdf/', /Split PDF/i],
   ['/heic-to-jpg/', /HEIC to JPG/i],
   ['/remove-photo-metadata/', /Remove Photo Metadata/i],
-  ['/qr-code-maker/', /QR Code Maker/i]
+  ['/qr-code-maker/', /QR Code Maker/i],
+  ['/about/', /Mission and Vision/i],
+  ['/principles/', /Project Principles/i]
 ];
 
 for (const [route, heading] of tools) {
