@@ -13,7 +13,7 @@ section: Technical documentation
 
 This HLD describes the major Clean Local Tools components, their responsibilities, trust boundaries, and interactions. It intentionally avoids function-level implementation detail.
 
-**Status on `main`:** sections describing existing static tools and browser-local processing are current. Local AI sections document an experimental target architecture validated on `test/webgpu-hardware-preview-v1`; they do not claim that the AI runtime is deployed in production.
+**Branch status:** this branch contains the experimental local-AI foundation. Hardware-recovery refinements and physical-device evidence continue on `test/webgpu-hardware-preview-v1`. Neither branch is deployed from `main`.
 
 ## Primary components
 
@@ -44,7 +44,7 @@ This is where ordinary deterministic processing occurs using combinations of:
 - WebAssembly where appropriate;
 - Web Workers for expensive work that should not block interaction.
 
-### 4. Experimental local AI foundation
+### 4. Local AI foundation
 
 The local AI layer provides a stable boundary between product features and AI execution technology.
 
@@ -82,7 +82,7 @@ The policy is intentionally model-specific. A lightweight model may permit a WAS
 
 ### 5. Third-party runtime assets
 
-Some production tools retrieve libraries from CDNs. The experimental local AI implementation also retrieves model/runtime assets.
+Some tools currently retrieve libraries or models from CDNs.
 
 These assets are application dependencies, not destinations for user working files. Nevertheless they create network availability, supply-chain, caching, and long-term-maintenance concerns.
 

@@ -23,7 +23,7 @@
 <main class="doc-main"><div class="wrap"><article class="doc-article"><div class="doc-kicker">Technical documentation</div><aside class="doc-status"><strong>Technical documentation</strong><span>This page records architecture and experimental direction. It is not a user-facing tool.</span></aside><div class="doc-content"><h1 id="architecture-overview">Architecture Overview</h1>
 <h2 id="purpose">Purpose</h2>
 <p>This document gives a new human or AI maintainer a fast mental model of Clean Local Tools before they read implementation details.</p>
-<p><strong>Status on <code>main</code>:</strong> the static browser-local tool architecture is current production behavior. The local AI layer described here is an experimental direction whose reference implementation remains on <code>test/webgpu-hardware-preview-v1</code>; it is not a production feature.</p>
+<p><strong>Branch status:</strong> this branch contains the experimental local-AI foundation. Hardware-recovery refinements and physical-device evidence continue on <code>test/webgpu-hardware-preview-v1</code>. Neither branch is deployed from <code>main</code>.</p>
 <h2 id="system-in-one-picture">System in one picture</h2>
 <pre><code class="language-text">                        CLEAN LOCAL TOOLS
                               |
@@ -39,8 +39,7 @@
                               |
              +----------------+----------------+
              |                                 |
-       JS / Canvas / WASM              Local AI layer
-                                      (experimental)
+       JS / Canvas / WASM                  Local AI layer
              |                                 |
        Web Workers where                  Worker boundary
          appropriate                           |
@@ -58,10 +57,10 @@
 <p>The website itself is delivered over the network. Some current tools also download JavaScript libraries, WebAssembly modules, or machine-learning model assets from third-party CDNs. Downloading application assets is different from uploading the user&#39;s working file, but it means those tools are not necessarily fully offline.</p>
 <h2 id="application-shape">Application shape</h2>
 <p>The project intentionally uses a low-infrastructure architecture:</p>
-<ul><li>static HTML;</li><li>CSS;</li><li>browser JavaScript;</li><li>browser APIs such as Canvas, File APIs, camera APIs, workers, and service workers;</li><li>experimental evaluation of WebGPU for future local AI capabilities;</li><li>selected third-party browser libraries/models;</li><li>no general-purpose application backend;</li><li>no database containing user working files;</li><li>no server-side file-processing pipeline.</li></ul>
+<ul><li>static HTML;</li><li>CSS;</li><li>browser JavaScript;</li><li>browser APIs such as Canvas, File APIs, camera APIs, workers, service workers, and increasingly WebGPU;</li><li>selected third-party browser libraries/models;</li><li>no general-purpose application backend;</li><li>no database containing user working files;</li><li>no server-side file-processing pipeline.</li></ul>
 <p>GitHub Pages currently hosts production. Cloudflare currently manages the domain/DNS. Neither should be treated as part of the document-processing runtime.</p>
 <h2 id="tool-isolation">Tool isolation</h2>
-<p>Most tools live in their own route/directory and should be understandable as small applications. Shared architectural foundations may be introduced when they provide real leverage. The local AI runtime is currently such an experiment, not a production dependency.</p>
+<p>Most tools live in their own route/directory and should be understandable as small applications. Shared architectural foundations may be introduced when they provide real leverage, such as the local AI runtime.</p>
 <p>Avoid creating a large framework dependency merely to make all tools look structurally identical. Shared abstractions should solve recurring problems.</p>
 <h2 id="local-ai-direction">Local AI direction</h2>
 <p>Local AI is being introduced as a reusable infrastructure layer rather than embedded directly into individual tool pages.</p>

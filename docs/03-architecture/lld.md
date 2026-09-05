@@ -13,7 +13,7 @@ section: Technical documentation
 
 This document describes implementation-level conventions and invariants that should survive individual refactors. It is intentionally a living document. When a subsystem becomes complex enough to deserve its own LLD, link that document from here.
 
-**Status on `main`:** ordinary browser-local tool conventions apply to production. Local AI contracts and model-specific details document the isolated `test/webgpu-hardware-preview-v1` experiment and are retained here as design constraints, not as a claim that the runtime is deployed on `main`.
+**Branch status:** this branch contains the experimental local-AI foundation. Hardware-recovery refinements and physical-device evidence continue on `test/webgpu-hardware-preview-v1`. Neither branch is deployed from `main`.
 
 ## Repository model
 

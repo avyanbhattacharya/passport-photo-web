@@ -13,7 +13,7 @@ section: Technical documentation
 
 This document gives a new human or AI maintainer a fast mental model of Clean Local Tools before they read implementation details.
 
-**Status on `main`:** the static browser-local tool architecture is current production behavior. The local AI layer described here is an experimental direction whose reference implementation remains on `test/webgpu-hardware-preview-v1`; it is not a production feature.
+**Branch status:** this branch contains the experimental local-AI foundation. Hardware-recovery refinements and physical-device evidence continue on `test/webgpu-hardware-preview-v1`. Neither branch is deployed from `main`.
 
 ## System in one picture
 
@@ -32,8 +32,7 @@ This document gives a new human or AI maintainer a fast mental model of Clean Lo
                               |
              +----------------+----------------+
              |                                 |
-       JS / Canvas / WASM              Local AI layer
-                                      (experimental)
+       JS / Canvas / WASM                  Local AI layer
              |                                 |
        Web Workers where                  Worker boundary
          appropriate                           |
@@ -62,8 +61,7 @@ The project intentionally uses a low-infrastructure architecture:
 - static HTML;
 - CSS;
 - browser JavaScript;
-- browser APIs such as Canvas, File APIs, camera APIs, workers, and service workers;
-- experimental evaluation of WebGPU for future local AI capabilities;
+- browser APIs such as Canvas, File APIs, camera APIs, workers, service workers, and increasingly WebGPU;
 - selected third-party browser libraries/models;
 - no general-purpose application backend;
 - no database containing user working files;
@@ -73,7 +71,7 @@ GitHub Pages currently hosts production. Cloudflare currently manages the domain
 
 ## Tool isolation
 
-Most tools live in their own route/directory and should be understandable as small applications. Shared architectural foundations may be introduced when they provide real leverage. The local AI runtime is currently such an experiment, not a production dependency.
+Most tools live in their own route/directory and should be understandable as small applications. Shared architectural foundations may be introduced when they provide real leverage, such as the local AI runtime.
 
 Avoid creating a large framework dependency merely to make all tools look structurally identical. Shared abstractions should solve recurring problems.
 

@@ -23,7 +23,7 @@
 <main class="doc-main"><div class="wrap"><article class="doc-article"><div class="doc-kicker">Technical documentation</div><aside class="doc-status"><strong>Technical documentation</strong><span>This page records architecture and experimental direction. It is not a user-facing tool.</span></aside><div class="doc-content"><h1 id="low-level-design-lld">Low-Level Design (LLD)</h1>
 <h2 id="purpose">Purpose</h2>
 <p>This document describes implementation-level conventions and invariants that should survive individual refactors. It is intentionally a living document. When a subsystem becomes complex enough to deserve its own LLD, link that document from here.</p>
-<p><strong>Status on <code>main</code>:</strong> ordinary browser-local tool conventions apply to production. Local AI contracts and model-specific details document the isolated <code>test/webgpu-hardware-preview-v1</code> experiment and are retained here as design constraints, not as a claim that the runtime is deployed on <code>main</code>.</p>
+<p><strong>Branch status:</strong> this branch contains the experimental local-AI foundation. Hardware-recovery refinements and physical-device evidence continue on <code>test/webgpu-hardware-preview-v1</code>. Neither branch is deployed from <code>main</code>.</p>
 <h2 id="repository-model">Repository model</h2>
 <p>Public tools are generally directory-based routes containing their own browser application assets. Shared infrastructure should be placed in clearly named shared locations rather than copied into every tool once reuse becomes meaningful.</p>
 <p>Before modifying an existing file, read the current branch version first. Do not reconstruct a large production file from an old copy or partial tool output.</p>

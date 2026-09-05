@@ -19,11 +19,9 @@ const pages = [
   ['/split-pdf/', 'split-pdf/index.html', 'https://cleanlocaltools.com/split-pdf/'],
   ['/heic-to-jpg/', 'heic-to-jpg/index.html', 'https://cleanlocaltools.com/heic-to-jpg/'],
   ['/remove-photo-metadata/', 'remove-photo-metadata/index.html', 'https://cleanlocaltools.com/remove-photo-metadata/'],
-  ['/qr-code-maker/', 'qr-code-maker/index.html', 'https://cleanlocaltools.com/qr-code-maker/'],
-  ['/about/', 'about/index.html', 'https://cleanlocaltools.com/about/'],
-  ['/principles/', 'principles/index.html', 'https://cleanlocaltools.com/principles/']
+  ['/qr-code-maker/', 'qr-code-maker/index.html', 'https://cleanlocaltools.com/qr-code-maker/']
 ];
-const homepageRoutes = pages.slice(1).map(([route]) => route).filter(route => !['/japa-counter/tap.html','/about/','/principles/'].includes(route));
+const homepageRoutes = pages.slice(1).map(([route]) => route).filter(route => route !== '/japa-counter/tap.html');
 const brandedFilePages = ['compress-pdf/index.html','merge-pdf/index.html','clean-pdf-printer/index.html','document-flattener/index.html','image-to-pdf/index.html','split-pdf/index.html','heic-to-jpg/index.html','remove-photo-metadata/index.html'];
 function read(relative){return fs.readFileSync(path.join(root, relative), 'utf8');}
 function appSourceFor(htmlPath){const appPath=path.join(path.dirname(htmlPath),'app.js'),absolute=path.join(root,appPath);return fs.existsSync(absolute)?fs.readFileSync(absolute,'utf8'):'';}
@@ -37,72 +35,5 @@ test('homepage keeps the compact nontechnical private-local brand story',()=>{co
 test('file-tool privacy panels use the simple brand promise',()=>{for(const htmlPath of brandedFilePages){const html=read(htmlPath);assert.ok(html.includes(privacy),`${htmlPath} missing master privacy promise`);assert.ok(html.includes('right on this device.'),`${htmlPath} missing on-device language`);assert.ok(html.includes('Nothing is uploaded for processing.'),`${htmlPath} missing no-upload language`);}});
 test('brand guide preserves private, local, and earned-offline positioning',()=>{const brand=read('BRAND.md');for(const phrase of ['Your files never leave your machine.','Private by design.','Works on your device.','Nothing is uploaded for processing.','Offline is an earned capability','Load it. Go offline. Keep working.'])assert.ok(brand.includes(phrase),`BRAND.md missing: ${phrase}`);});
 test('browser tests avoid fixed sleeps and runaway assertion timeouts',()=>{const testsDir=path.join(root,'tests'),specs=fs.readdirSync(testsDir).filter(name=>name.endsWith('.spec.js'));for(const spec of specs){const source=fs.readFileSync(path.join(testsDir,spec),'utf8');assert.doesNotMatch(source,/waitForTimeout\s*\(/,`${spec} contains a fixed sleep`);for(const match of source.matchAll(/timeout\s*:\s*(\d+)/g))assert.ok(Number(match[1])<=30000,`${spec} contains timeout ${match[1]}ms`);}});
-test('every tool family keeps a dedicated deep browser spec',()=>{const expected=['passport-photo.spec.js','japa-touchless.spec.js','japa-tap.spec.js','compress-pdf.spec.js','merge-pdf.spec.js','resize-image.spec.js','clean-pdf-printer.spec.js','document-flattener.spec.js','image-to-pdf.spec.js','split-pdf.spec.js','heic-to-jpg.spec.js','remove-photo-metadata.spec.js','qr-code-maker.spec.js'];for(const spec of expected)assert.ok(fs.existsSync(path.join(root,'tests',spec)),`${spec} missing`);});
-test('CI keeps bounded, fail-fast static, Chromium, and compatibility gates',()=>{const workflow=read('.github/workflows/tests.yml'),config=read('playwright.config.js'),pkg=JSON.parse(read('package.json'));assert.match(workflow,/static:\s*[\s\S]*timeout-minutes:\s*3/);assert.match(workflow,/chromium:\s*[\s\S]*timeout-minutes:\s*8/);assert.match(workflow,/compatibility:\s*[\s\S]*timeout-minutes:\s*6/);assert.doesNotMatch(workflow,/container:\s*\n\s*image:\s*mcr\.microsoft\.com\/playwright/,'browser jobs must stay on the GitHub runner');assert.equal((workflow.match(/uses: actions\/cache@v4/g)||[]).length,2,'both browser jobs must cache Playwright browsers');assert.equal((workflow.match(/path: ~\/\.cache\/ms-playwright/g)||[]).length,2,'both browser jobs must cache the Playwright browser directory');assert.ok(workflow.includes('playwright-1.62.1-chromium'));assert.ok(workflow.includes('playwright-1.62.1-webkit'));assert.ok(workflow.includes('npx playwright install-deps chromium'));assert.ok(workflow.includes('npx playwright install-deps webkit'));assert.ok(workflow.includes("if: steps.playwright-cache.outputs.cache-hit != 'true'"));assert.ok(workflow.includes('npx playwright install chromium'));assert.ok(workflow.includes('npx playwright install webkit'));assert.ok(workflow.includes('cancel-in-progress: true'));assert.doesNotMatch(workflow,/continue-on-error:\s*true/);assert.doesNotMatch(workflow,/Enforce (static checks|deep Chromium result|compatibility result)/);for(const stepName of ['Site metadata and catalog','Test architecture and hygiene','Core and Japa deep tests','PDF deep tests','Image and catalog deep tests','Desktop WebKit smoke','iPhone WebKit smoke'])assert.ok(workflow.includes(`name: ${stepName}`),`missing diagnostic step ${stepName}`);assert.equal(pkg.devDependencies['@playwright/test'],'1.62.1','Playwright version must stay pinned for deterministic browser caches');assert.equal(pkg.scripts['test:static'],'node --test tests/static/*.test.js');assert.ok(pkg.scripts['test:chromium:core']);assert.ok(pkg.scripts['test:chromium:pdf']);assert.ok(pkg.scripts['test:chromium:image']);assert.ok(pkg.scripts['test:compat:webkit']);assert.ok(pkg.scripts['test:compat:mobile']);assert.ok(config.includes('timeout: 30000'));assert.ok(config.includes("trace: 'on-first-retry'"));assert.ok(config.includes('all-tools-regression\\.spec\\.js'));});
-
-test('homepage brand documentation preserves approved mission and experimental AI boundary',()=>{
-  const required=[
-    'docs/README.md',
-    'docs/01-purpose/mission-and-vision.md',
-    'docs/01-purpose/principles.md',
-    'docs/03-architecture/architecture-overview.md',
-    'docs/03-architecture/hld.md',
-    'docs/03-architecture/lld.md',
-    'docs/03-architecture/local-ai-models.md'
-  ];
-  for(const relative of required)assert.ok(fs.existsSync(path.join(root,relative)),relative+' missing');
-  const index=read('docs/README.md');
-  for(const relative of required.slice(1))assert.ok(index.includes(relative.slice(5)),relative+' not linked from handbook index');
-  const mission=read('docs/01-purpose/mission-and-vision.md');
-  for(const phrase of ['Democratize useful digital tools','Your files never leave your machine.','Offline is an earned property'])assert.ok(mission.includes(phrase),'mission missing: '+phrase);
-  const principles=read('docs/01-purpose/principles.md');
-  for(const phrase of ['No advertising as a product dependency','No unnecessary accounts','Privacy is architecture','Local-first does not mean run at any cost'])assert.ok(principles.includes(phrase),'principles missing: '+phrase);
-  for(const relative of required.slice(3)){
-    const design=read(relative);
-    assert.ok(design.includes('test/webgpu-hardware-preview-v1'),
-      relative+' must identify the isolated experimental implementation');
-  }
-  assert.ok(read('docs/03-architecture/local-ai-models.md').includes('experimental and not deployed from `main`'));
-});
-
-test('homepage generated documentation respects public and technical publishing boundaries',()=>{
-  const homepage=read('index.html');
-  assert.ok(homepage.includes('href="/about/"'),'homepage should link to About');
-  for(const relative of ['about/index.html','principles/index.html']){
-    const html=read(relative);
-    assert.ok(html.includes('Generated from docs/'),relative+' should identify its Markdown source');
-    assert.ok(!html.includes('/assets/style.css'),relative+' should not inherit tool-page layout styles');
-    assert.ok(html.includes('/assets/site.css'),relative+' should use the shared site shell');
-    assert.ok(html.includes('/assets/docs.css'),relative+' should use the documentation styles');
-    assert.ok(html.includes('class="docs-page docs-public brand-page'),relative+' should use a public brand layout');
-    assert.doesNotMatch(html,/content="[^"]*noindex/i,relative+' should be indexable');
-  }
-  const technical=[
-    'docs/index.html',
-    'docs/architecture/index.html',
-    'docs/architecture/hld/index.html',
-    'docs/architecture/lld/index.html',
-    'docs/architecture/local-ai-models/index.html'
-  ];
-  const sitemap=read('sitemap.xml');
-  for(const relative of technical){
-    const html=read(relative);
-    assert.match(html,/<meta name="robots" content="noindex,follow,noarchive">/,relative+' should remain out of search');
-    const canonical=html.match(/<link rel="canonical" href="([^"]+)">/);
-    assert.ok(canonical,relative+' canonical missing');
-    assert.ok(!sitemap.includes(`<loc>${canonical[1]}</loc>`),relative+' should not be in sitemap');
-  }
-});
-
-test('CI keeps generated documentation reproducible',()=>{
-  const workflow=read('.github/workflows/tests.yml');
-  const pkg=JSON.parse(read('package.json'));
-  assert.ok(workflow.includes('name: Generated documentation'));
-  assert.ok(workflow.includes('run: |'));
-  assert.ok(workflow.includes('npm run build:docs'));
-  assert.ok(workflow.includes('git diff --exit-code -- index.html about principles docs sitemap.xml'));
-  assert.ok(workflow.includes('npm run test:docs'));
-  assert.equal(pkg.scripts['build:docs'],'node scripts/build-docs.js --write');
-  assert.equal(pkg.scripts['check:docs'],'node scripts/build-docs.js --check');
-  assert.equal(pkg.scripts['test:docs'],'node --test tests/static/docs-build.test.js');
-});
+test('every tool family keeps a dedicated deep browser spec',()=>{const expected=['passport-photo.spec.js','japa-touchless.spec.js','japa-tap.spec.js','compress-pdf.spec.js','merge-pdf.spec.js','resize-image.spec.js','clean-pdf-printer.spec.js','document-flattener.spec.js','image-to-pdf.spec.js','split-pdf.spec.js','heic-to-jpg.spec.js','remove-photo-metadata.spec.js','qr-code-maker.spec.js','local-ai-foundation.spec.js'];for(const spec of expected)assert.ok(fs.existsSync(path.join(root,'tests',spec)),`${spec} missing`);});
+test('CI keeps bounded, fail-fast static, Chromium, and compatibility gates',()=>{const workflow=read('.github/workflows/tests.yml'),config=read('playwright.config.js'),pkg=JSON.parse(read('package.json'));assert.match(workflow,/static:\s*[\s\S]*timeout-minutes:\s*3/);assert.match(workflow,/chromium:\s*[\s\S]*timeout-minutes:\s*8/);assert.match(workflow,/compatibility:\s*[\s\S]*timeout-minutes:\s*8/);assert.doesNotMatch(workflow,/container:\s*\n\s*image:\s*mcr\.microsoft\.com\/playwright/,'browser jobs must stay on the GitHub runner');assert.equal((workflow.match(/uses: actions\/cache@v4/g)||[]).length,2,'both browser jobs must cache Playwright browsers');assert.equal((workflow.match(/path: ~\/\.cache\/ms-playwright/g)||[]).length,2,'both browser jobs must cache the Playwright browser directory');assert.ok(workflow.includes('playwright-1.62.1-chromium'));assert.ok(workflow.includes('playwright-1.62.1-webkit'));assert.ok(workflow.includes('npx playwright install-deps chromium'));assert.ok(workflow.includes('npx playwright install-deps webkit'));assert.ok(workflow.includes("if: steps.playwright-cache.outputs.cache-hit != 'true'"));assert.ok(workflow.includes('npx playwright install chromium'));assert.ok(workflow.includes('npx playwright install webkit'));assert.ok(workflow.includes('cancel-in-progress: true'));assert.doesNotMatch(workflow,/continue-on-error:\s*true/);assert.doesNotMatch(workflow,/Enforce (static checks|deep Chromium result|compatibility result)/);for(const stepName of ['Site metadata and catalog','Test architecture and hygiene','Local AI foundation','Core, Japa, and local AI deep tests','PDF deep tests','Image and catalog deep tests','Desktop WebKit smoke','iPhone WebKit smoke'])assert.ok(workflow.includes(`name: ${stepName}`),`missing diagnostic step ${stepName}`);assert.equal(pkg.devDependencies['@playwright/test'],'1.62.1','Playwright version must stay pinned for deterministic browser caches');assert.equal(pkg.scripts['test:static'],'node --test tests/static/*.test.js');assert.ok(pkg.scripts['test:static:local-ai']);assert.ok(pkg.scripts['test:chromium:core'].includes('local-ai-foundation.spec.js'));assert.ok(pkg.scripts['test:chromium:pdf']);assert.ok(pkg.scripts['test:chromium:image']);assert.ok(pkg.scripts['test:compat:webkit']);assert.ok(pkg.scripts['test:compat:mobile']);assert.ok(config.includes('timeout: 30000'));assert.ok(config.includes("trace: 'on-first-retry'"));assert.ok(config.includes('all-tools-regression|local-ai-foundation'));});

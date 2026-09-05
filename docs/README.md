@@ -25,10 +25,14 @@ The intended product direction is private, local-first software that runs primar
 
 1. [Mission and Vision](01-purpose/mission-and-vision.md)
 2. [Principles](01-purpose/principles.md)
-3. [Architecture Overview](03-architecture/architecture-overview.md)
-4. [High-Level Design](03-architecture/hld.md)
-5. [Low-Level Design](03-architecture/lld.md)
-6. [Experimental Local AI Models](03-architecture/local-ai-models.md)
+3. [Project Continuity](01-purpose/project-continuity.md)
+4. [Architecture Overview](03-architecture/architecture-overview.md)
+5. [High-Level Design](03-architecture/hld.md)
+6. [Low-Level Design](03-architecture/lld.md)
+7. [Experimental Local AI Models](03-architecture/local-ai-models.md)
+8. [Testing Architecture and Strategy](04-testing/testing-architecture-and-strategy.md)
+9. [Test Results](04-testing/test-results.md)
+10. [Adding a New Tool](05-development/adding-a-new-tool.md)
 
 ## Documentation rules
 
@@ -63,7 +67,7 @@ The permanent known-green historical reference branch is `baseline/clean-local-t
 
 Clean Local Tools is primarily a static HTML/CSS/JavaScript application hosted on GitHub Pages, with user-file processing performed in the browser and automated quality gates covering static invariants plus Chromium, desktop WebKit, and mobile WebKit workflows.
 
-Local AI is an experimental architectural direction. Its reference implementation and physical-hardware evidence remain isolated from production on `test/webgpu-hardware-preview-v1` until the capability is ready for a separate promotion decision.
+Local AI remains isolated from production. This branch contains the experimental foundation; hardware-recovery refinements and physical-device evidence continue on `test/webgpu-hardware-preview-v1` until the capability is ready for a separate promotion decision.
 
 ## Stewardship
 

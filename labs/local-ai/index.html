@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Local AI Foundation Lab | Clean Local Tools</title>
+<style>
+:root{font-family:Arial,Helvetica,sans-serif;color:#202124;background:#fff}*{box-sizing:border-box}body{margin:0}.wrap{width:min(760px,calc(100% - 32px));margin:48px auto}.card{border:1px solid #dadce0;border-radius:14px;padding:22px;margin-top:18px}.status{font-weight:700}.muted{color:#5f6368;line-height:1.55}.ok{background:#f5f8ff;border-color:#e8f0fe}.notice{margin-top:14px;padding:12px 14px;border-radius:10px;background:#f8f9fa;color:#3c4043;line-height:1.5}.notice.unsupported{background:#fff7e6}.notice.supported{background:#f5f8ff}button,.file-label{display:inline-flex;align-items:center;justify-content:center;border:0;border-radius:8px;background:#1a73e8;color:#fff;padding:11px 16px;font-weight:700;cursor:pointer}.file-label{margin-right:8px}.file-label.disabled{opacity:.5;cursor:not-allowed}.file-input{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}button:disabled{opacity:.5;cursor:not-allowed}pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:13px}.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.selected{font-size:13px;color:#5f6368;margin-top:10px}@media(max-width:520px){.wrap{margin:28px auto}.card{padding:18px}.row{align-items:stretch}.row button,.row .file-label{width:100%;margin:0}}
+</style>
+</head>
+<body>
+<main class="wrap">
+<h1>Local AI Foundation Lab</h1>
+<p class="muted">A private engineering probe for browser-local AI. It tests GPU acceleration when available and only uses local fallbacks that are explicitly approved for the model and device class.</p>
+<div class="card ok"><strong>🔒 Your files never leave your machine.</strong><p class="muted">Model code and weights may be downloaded from third-party hosting on first use. The image you choose is passed to the model inside this browser and is not uploaded for inference.</p></div>
+<div class="card"><h2>Foundation compute probe</h2><div>Backend: <span id="backend" class="status">Checking…</span></div><div>Reason: <span id="reason">Checking…</span></div><div>Model: <span id="model">Checking…</span></div><p class="muted">This tiny deterministic model validates our worker, WebGPU and CPU fallback plumbing without downloading a large model.</p><button id="run" type="button">Run foundation inference</button><pre id="result" aria-live="polite">Not run yet.</pre></div>
+<div class="card"><h2>Real pretrained vision model</h2><div>Model: <span id="visionModel" class="status">Checking…</span></div><div>Preferred backend: <span id="visionPreferred">Checking…</span></div><div>Fallback policy: <span id="visionFallback">Checking…</span></div><div>Device class: <span id="visionDevice">Checking…</span></div><p class="muted">Experimental MobileNetV4 image classification through a pinned Transformers.js adapter. WebGPU is preferred. WASM is permitted only where this model's execution policy considers the fallback reasonable. The first run downloads model/runtime assets and can take noticeably longer.</p><div id="visionCompatibility" class="notice" aria-live="polite">Checking whether this device can run the model efficiently and privately…</div><div class="row"><label class="file-label disabled" id="visionFileLabel" for="visionFile">Choose image</label><input class="file-input" id="visionFile" type="file" accept="image/*" disabled><button id="classify" type="button" disabled>Classify locally</button></div><div class="selected" id="selected">No image selected.</div><pre id="visionResult" aria-live="polite">Not run yet.</pre></div>
+</main>
+<script src="/assets/local-ai/client.js"></script>
+<script>
+const client=new LocalAIClient();
+const backend=document.getElementById('backend');
+const reason=document.getElementById('reason');
+const model=document.getElementById('model');
+const result=document.getElementById('result');
+const visionModel=document.getElementById('visionModel');
+const visionPreferred=document.getElementById('visionPreferred');
+const visionFallback=document.getElementById('visionFallback');
+const visionDevice=document.getElementById('visionDevice');
+const visionCompatibility=document.getElementById('visionCompatibility');
+const visionFile=document.getElementById('visionFile');
+const visionFileLabel=document.getElementById('visionFileLabel');
+const classify=document.getElementById('classify');
+const selected=document.getElementById('selected');
+const visionResult=document.getElementById('visionResult');
+let selectedImage=null;
+let visionSupported=false;
+function setVisionSupport(status){
+  visionSupported=!!(status.compatibility&&status.compatibility.supported);
+  visionFile.disabled=!visionSupported;
+  visionFileLabel.classList.toggle('disabled',!visionSupported);
+  visionDevice.textContent=status.deviceClass||'unknown';
+  visionFallback.textContent=status.fallbackMode==='desktop-only'?'WASM on certified desktop-class devices only':status.fallbackMode||status.fallbackBackend;
+  if(visionSupported){
+    const backend=status.compatibility.backend==='webgpu'?'GPU acceleration':'approved local WASM fallback';
+    visionCompatibility.className='notice supported';
+    visionCompatibility.textContent=`Supported on this device using ${backend}.`;
+  }else{
+    visionCompatibility.className='notice unsupported';
+    visionCompatibility.textContent='This AI feature is not supported on this device yet. It requires browser hardware acceleration, or an explicitly certified local fallback, to run privately and efficiently. Your file has not been uploaded or processed elsewhere.';
+  }
+}
+async function loadStatus(){try{const status=await client.status();backend.textContent=status.backend;reason.textContent=status.reason;model.textContent=status.model;}catch(error){backend.textContent='error';reason.textContent=error.message;}try{const status=await client.visionStatus();visionModel.textContent=status.model;visionPreferred.textContent=status.preferredBackend;setVisionSupport(status);}catch(error){visionModel.textContent='error';visionPreferred.textContent='unavailable';visionFallback.textContent=error.message;visionCompatibility.className='notice unsupported';visionCompatibility.textContent='Compatibility check failed. No image has been processed.';}}
+async function run(){result.textContent='Running…';try{const output=await client.infer([0.2,0.4,0.6,0.8]);result.textContent=JSON.stringify({backend:output.backend,model:output.model,probabilities:output.probabilities},null,2);}catch(error){result.textContent=`Error: ${error.message}`;}}
+visionFile.addEventListener('change',()=>{selectedImage=visionFile.files&&visionFile.files[0]?visionFile.files[0]:null;classify.disabled=!visionSupported||!selectedImage;selected.textContent=selectedImage?`${selectedImage.name} · ${(selectedImage.size/1024).toFixed(1)} KB`:'No image selected.';visionResult.textContent='Not run yet.';});
+async function classifyImage(){if(!selectedImage||!visionSupported)return;classify.disabled=true;visionResult.textContent='Loading model and classifying locally…';try{const output=await client.classifyImage(selectedImage,{topK:5});visionResult.textContent=JSON.stringify({backend:output.backend,model:output.model,fallbackReason:output.fallbackReason,predictions:output.predictions},null,2);}catch(error){if(error.code==='local-ai-device-not-supported'){visionResult.textContent='This AI feature is not supported on this device yet. Your file was not uploaded or processed elsewhere.';}else{visionResult.textContent=`Error: ${error.message}`;}}finally{classify.disabled=!visionSupported||!selectedImage;}}
+document.getElementById('run').addEventListener('click',run);classify.addEventListener('click',classifyImage);loadStatus();window.addEventListener('pagehide',()=>client.close(),{once:true});
+</script>
+</body>
+</html>

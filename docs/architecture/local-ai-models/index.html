@@ -23,7 +23,7 @@
 <main class="doc-main"><div class="wrap"><article class="doc-article"><div class="doc-kicker">Technical documentation</div><aside class="doc-status"><strong>Technical documentation</strong><span>This page records architecture and experimental direction. It is not a user-facing tool.</span></aside><div class="doc-content"><h1 id="local-ai-models">Local AI Models</h1>
 <h2 id="purpose">Purpose</h2>
 <p>This document records the concrete model/runtime choices behind Clean Local Tools local AI so future humans and AI agents do not need to reconstruct them from code or chat history.</p>
-<p><strong>Implementation status:</strong> experimental and not deployed from <code>main</code>. The reference code, tests, and physical-hardware evidence described below live on <code>test/webgpu-hardware-preview-v1</code>. This document is promoted separately so the architectural decisions and lessons survive while production code remains unchanged.</p>
+<p><strong>Branch status:</strong> this branch contains the experimental local-AI foundation. Hardware-recovery refinements and physical-device evidence continue on <code>test/webgpu-hardware-preview-v1</code>. Neither branch is deployed from <code>main</code>.</p>
 <h2 id="architecture-rule">Architecture rule</h2>
 <p>Product features should request a semantic operation through a model adapter. They should not directly instantiate a model framework, GPU device, or remote AI service.</p>
 <pre><code class="language-text">Tool
@@ -66,44 +66,20 @@ WebGPU preferred                         local fallback
            |
           yes
            v
-start model work in a disposable
-WebGPU worker supervised by the page
+load WebGPU pipeline
      | success
      v
-classify with a bounded
-30-second WebGPU attempt
+  classify
      |
- WebGPU rejection or adapter watchdog
- timeout while the worker remains responsive
+ WebGPU inference failure
      v
-re-evaluate model policy
-     |
-certified desktop -&gt; rebuild as WASM
-mobile / unknown -&gt; unsupported
-
-worker event loop blocked for 30 seconds
-           |
-           v
-page terminates the frozen GPU worker
-           |
-           v
-fresh worker re-evaluates policy with
-reason: webgpu-worker-timeout
+rebuild as WASM pipeline
 
 no WebGPU / WebGPU initialization failure
            |
            v
        WASM pipeline</code></pre>
 <p>No remote inference service is used as a fallback.</p>
-<h3 id="stalled-or-lost-webgpu-devices">Stalled or lost WebGPU devices</h3>
-<p>A successful <code>requestAdapter()</code> probe proves that a browser can expose a GPU adapter; it does not prove that every operator in a real model can initialize or execute on that adapter. A physical macOS/Chrome test demonstrated that the Metal-backed WebGPU device can become invalid while ONNX Runtime creates or executes a model operator. In that failure mode, either the pipeline-construction promise or the inference promise may remain pending instead of rejecting promptly.</p>
-<p>The vision adapter places separate 30-second watchdogs around WebGPU pipeline construction and WebGPU inference. Those adapter timers handle asynchronous promises while the worker event loop is healthy. Physical retesting showed that a native Metal/Dawn failure can also block the worker event loop itself, preventing timers inside that worker from firing.</p>
-<p><code>LocalAIClient</code> therefore provides the authoritative watchdog across the worker boundary. When a WebGPU-selected classification worker does not answer within 30 seconds, the page:</p>
-<ol><li>terminates the unresponsive worker, cancelling the inaccessible native GPU work;</li><li>starts a fresh worker explicitly requesting local WASM policy evaluation;</li><li>passes <code>webgpu-worker-timeout</code> as the fallback reason;</li><li>retries the same local image within the remaining overall operation deadline.</li></ol>
-<p>The forced-WASM worker does not bypass model policy. It classifies the device again: certified desktop devices may run WASM/q8, while mobile and unknown devices return <code>local-ai-device-not-supported</code>.</p>
-<p>If WebGPU initialization or inference rejects or the worker supervisor expires:</p>
-<ul><li>the failure reason is retained (<code>webgpu-model-initialization-timeout</code>, <code>webgpu-inference-timeout</code>, or <code>webgpu-worker-timeout</code>);</li><li>the model execution policy is evaluated again;</li><li>certified desktop-class devices rebuild the pipeline with WASM/q8 and retry locally;</li><li>mobile and unknown devices do not run the unapproved heavy fallback and return <code>local-ai-device-not-supported</code>;</li><li>no remote inference fallback is introduced.</li></ul>
-<p>The cross-worker supervisor can cancel otherwise inaccessible native work by terminating the worker. Future runtime integrations should still prefer abortable initialization/inference APIs when available.</p>
 <h2 id="safari-strategy">Safari strategy</h2>
 <p>Safari compatibility is pursued through progressive enhancement, not browser-name detection.</p>
 <p>If a Safari/WebKit environment exposes usable WebGPU and the model/runtime successfully initializes, the WebGPU path may be used. Otherwise the architecture falls back to WASM where supported.</p>
@@ -112,7 +88,7 @@ no WebGPU / WebGPU initialization failure
 <h2 id="testing-strategy">Testing strategy</h2>
 <p>Required CI intentionally does <strong>not</strong> download the external model on every run. That would make the core quality gate dependent on large external network assets and reduce reliability.</p>
 <p>Instead:</p>
-<ul><li>static tests inject fake workers and a fake Transformers.js module to prove WebGPU preference, worker termination/restart, WASM fallback, initialization/inference rejection fallback, stalled-initialization and stalled-inference behavior, mobile/unknown rejection, input handling, pinned metadata, and result normalization;</li><li>browser tests prove the worker exposes the real-model semantic contract;</li><li>browser tests prove model assets are not downloaded merely by opening the lab or querying model status;</li><li>existing foundation inference continues to prove real worker execution without external dependencies.</li></ul>
+<ul><li>static tests inject a fake Transformers.js module and prove WebGPU preference, WASM fallback, inference-failure fallback, input handling, pinned metadata, and result normalization;</li><li>browser tests prove the worker exposes the real-model semantic contract;</li><li>browser tests prove model assets are not downloaded merely by opening the lab or querying model status;</li><li>existing foundation inference continues to prove real worker execution without external dependencies.</li></ul>
 <p>A separate real-model smoke should be run for model/framework upgrades and before promoting the capability into a public tool. That smoke must verify an actual image result and record browser/backend/runtime evidence.</p>
 <h2 id="upgrade-procedure">Upgrade procedure</h2>
 <p>Before changing model ID, Transformers.js version, backend options, or dtype:</p>

@@ -1,6 +1,6 @@
 const { defineConfig, devices } = require('@playwright/test');
 
-const crossBrowserSmoke = /.*all-tools-regression\.spec\.js/;
+const crossBrowserSmoke = /.*(all-tools-regression|local-ai-foundation)\.spec\.js/;
 
 module.exports = defineConfig({
   testDir: './tests',

@@ -23,7 +23,7 @@
 <main class="doc-main"><div class="wrap"><article class="doc-article"><div class="doc-kicker">Technical documentation</div><aside class="doc-status"><strong>Technical documentation</strong><span>This page records architecture and experimental direction. It is not a user-facing tool.</span></aside><div class="doc-content"><h1 id="high-level-design-hld">High-Level Design (HLD)</h1>
 <h2 id="scope">Scope</h2>
 <p>This HLD describes the major Clean Local Tools components, their responsibilities, trust boundaries, and interactions. It intentionally avoids function-level implementation detail.</p>
-<p><strong>Status on <code>main</code>:</strong> sections describing existing static tools and browser-local processing are current. Local AI sections document an experimental target architecture validated on <code>test/webgpu-hardware-preview-v1</code>; they do not claim that the AI runtime is deployed in production.</p>
+<p><strong>Branch status:</strong> this branch contains the experimental local-AI foundation. Hardware-recovery refinements and physical-device evidence continue on <code>test/webgpu-hardware-preview-v1</code>. Neither branch is deployed from <code>main</code>.</p>
 <h2 id="primary-components">Primary components</h2>
 <h3 id="1-static-application-shell">1. Static application shell</h3>
 <p>Responsibilities:</p>
@@ -35,7 +35,7 @@
 <h3 id="3-browser-processing-layer">3. Browser processing layer</h3>
 <p>This is where ordinary deterministic processing occurs using combinations of:</p>
 <ul><li>JavaScript;</li><li>Canvas;</li><li>browser File/Blob APIs;</li><li>PDF/image libraries;</li><li>WebAssembly where appropriate;</li><li>Web Workers for expensive work that should not block interaction.</li></ul>
-<h3 id="4-experimental-local-ai-foundation">4. Experimental local AI foundation</h3>
+<h3 id="4-local-ai-foundation">4. Local AI foundation</h3>
 <p>The local AI layer provides a stable boundary between product features and AI execution technology.</p>
 <p>Responsibilities:</p>
 <ul><li>detect relevant capabilities;</li><li>probe whether WebGPU is genuinely usable rather than checking API presence only;</li><li>prefer WebGPU when usable;</li><li>apply a model-specific execution policy before choosing a fallback;</li><li>permit CPU/WASM fallback only for model/device combinations that have been explicitly approved;</li><li>stop cleanly with a compatibility result when no reasonable local backend is available;</li><li>keep expensive execution behind a worker boundary where practical;</li><li>expose a tool-facing API that does not require every tool to understand GPU lifecycle details;</li><li>bound initialization so a broken/slow capability does not indefinitely hang a tool;</li><li>never convert an unsupported local path into a hidden remote/cloud inference path.</li></ul>
@@ -53,7 +53,7 @@
       run       run      explain and stop</code></pre>
 <p>The policy is intentionally model-specific. A lightweight model may permit a WASM fallback on desktop-class devices, while a heavier model may require WebGPU everywhere. Technical capability and acceptable product experience are separate questions.</p>
 <h3 id="5-third-party-runtime-assets">5. Third-party runtime assets</h3>
-<p>Some production tools retrieve libraries from CDNs. The experimental local AI implementation also retrieves model/runtime assets.</p>
+<p>Some tools currently retrieve libraries or models from CDNs.</p>
 <p>These assets are application dependencies, not destinations for user working files. Nevertheless they create network availability, supply-chain, caching, and long-term-maintenance concerns.</p>
 <p>Direction of travel:</p>
 <ul><li>know exactly which external assets a tool needs;</li><li>pin versions where feasible;</li><li>test failure behavior;</li><li>evaluate self-hosting important assets;</li><li>only award an Offline Ready claim after automated offline verification.</li></ul>
