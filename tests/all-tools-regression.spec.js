@@ -14,7 +14,9 @@ const tools = [
   ['/split-pdf/', /Split PDF/i],
   ['/heic-to-jpg/', /HEIC to JPG/i],
   ['/remove-photo-metadata/', /Remove Photo Metadata/i],
-  ['/qr-code-maker/', /QR Code Maker/i]
+  ['/qr-code-maker/', /QR Code Maker/i],
+  ['/about/', /Useful tools without surrendering your files/i],
+  ['/principles/', /Principles that keep the promise honest/i]
 ];
 
 for (const [route, heading] of tools) {
@@ -66,3 +68,29 @@ for (const [route, heading] of tools) {
     expect(brokenLocal, `broken local assets on ${route}`).toEqual([]);
   });
 }
+
+test('public documentation pages use the composed brand layout', async ({ page }) => {
+  await page.goto('/about/', { waitUntil: 'domcontentloaded' });
+  const metrics = await page.evaluate(() => {
+    const hero = document.querySelector('.brand-hero-grid');
+    const heroBox = hero.getBoundingClientRect();
+    return {
+      viewportWidth: document.documentElement.clientWidth,
+      heroWidth: heroBox.width,
+      heroColumns: getComputedStyle(hero).gridTemplateColumns,
+      valueCount: document.querySelectorAll('.brand-value').length,
+      storyCount: document.querySelectorAll('.brand-story-section').length,
+      trustCardCount: document.querySelectorAll('.brand-trust-card').length,
+      activeNav: document.querySelector('[aria-current="page"]')?.textContent,
+      hasLegacyArticle: Boolean(document.querySelector('.doc-article'))
+    };
+  });
+  expect(metrics.heroWidth).toBeGreaterThan(Math.min(metrics.viewportWidth - 80, 900));
+  expect(metrics.valueCount).toBe(3);
+  expect(metrics.storyCount).toBeGreaterThanOrEqual(4);
+  expect(metrics.trustCardCount).toBe(2);
+  expect(metrics.activeNav).toBe('About');
+  expect(metrics.hasLegacyArticle).toBe(false);
+  if (metrics.viewportWidth > 820) expect(metrics.heroColumns.split(' ').length).toBe(2);
+  else expect(metrics.heroColumns.split(' ').length).toBe(1);
+});

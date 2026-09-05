@@ -3,7 +3,10 @@
   "private": true,
   "version": "1.0.0",
   "scripts": {
-    "test": "npm run test:static && npm run test:chromium && npm run test:compat",
+    "build:docs": "node scripts/build-docs.js --write",
+    "check:docs": "node scripts/build-docs.js --check",
+    "test:docs": "node --test tests/static/docs-build.test.js",
+    "test": "npm run check:docs && npm run test:static && npm run test:chromium && npm run test:compat",
     "test:static": "node --test tests/static/*.test.js",
     "test:static:site": "node --test --test-name-pattern=\"canonical|sitemap|homepage\" tests/static/site.test.js",
     "test:static:hygiene": "node --test --test-name-pattern=\"browser tests|dedicated deep|CI keeps\" tests/static/site.test.js",

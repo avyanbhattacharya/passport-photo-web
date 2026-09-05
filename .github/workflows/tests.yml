@@ -25,6 +25,11 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '24'
+      - name: Generated documentation
+        run: |
+          npm run build:docs
+          git diff --exit-code -- index.html about principles docs sitemap.xml
+          npm run test:docs
       - name: Site metadata and catalog
         run: npm run test:static:site
       - name: Test architecture and hygiene

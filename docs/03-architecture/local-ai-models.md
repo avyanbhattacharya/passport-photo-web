@@ -1,8 +1,19 @@
+---
+render: true
+title: Local AI Models
+description: Experimental local AI model, execution-policy, and fallback architecture for Clean Local Tools.
+route: /docs/architecture/local-ai-models/
+index: false
+section: Technical documentation
+---
+
 # Local AI Models
 
 ## Purpose
 
 This document records the concrete model/runtime choices behind Clean Local Tools local AI so future humans and AI agents do not need to reconstruct them from code or chat history.
+
+**Branch status:** this branch contains the experimental local-AI foundation. Hardware-recovery refinements and physical-device evidence continue on `test/webgpu-hardware-preview-v1`. Neither branch is deployed from `main`.
 
 ## Architecture rule
 

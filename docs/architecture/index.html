@@ -1,0 +1,124 @@
+<!doctype html>
+<!-- Generated from docs/03-architecture/architecture-overview.md by scripts/build-docs.js. Do not edit directly. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#ffffff">
+<meta name="description" content="Technical overview of the browser-local Clean Local Tools architecture.">
+<meta name="robots" content="noindex,follow,noarchive">
+<link rel="canonical" href="https://cleanlocaltools.com/docs/architecture/">
+<meta property="og:title" content="Architecture Overview | Clean Local Tools">
+<meta property="og:description" content="Technical overview of the browser-local Clean Local Tools architecture.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://cleanlocaltools.com/docs/architecture/">
+<meta property="og:site_name" content="Clean Local Tools">
+<title>Architecture Overview | Clean Local Tools</title>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"Architecture Overview","description":"Technical overview of the browser-local Clean Local Tools architecture.","url":"https://cleanlocaltools.com/docs/architecture/","isPartOf":{"@type":"WebSite","name":"Clean Local Tools","url":"https://cleanlocaltools.com/"}}</script>
+<link rel="stylesheet" href="/assets/site.css?v=a78ae1a98127">
+<link rel="stylesheet" href="/assets/docs.css?v=ab6cc24636dd">
+</head>
+<body class="docs-page docs-technical">
+<header class="topbar"><div class="wrap"><div class="brand"><a href="/">Clean Local Tools</a></div><nav class="topnav" aria-label="Primary"><a class="toplink" href="/#all-tools">All tools</a><a class="toplink" href="/about/">About</a><a class="toplink" href="/principles/">Principles</a></nav></div></header>
+<main class="doc-main"><div class="wrap"><article class="doc-article"><div class="doc-kicker">Technical documentation</div><aside class="doc-status"><strong>Technical documentation</strong><span>This page records architecture and experimental direction. It is not a user-facing tool.</span></aside><div class="doc-content"><h1 id="architecture-overview">Architecture Overview</h1>
+<h2 id="purpose">Purpose</h2>
+<p>This document gives a new human or AI maintainer a fast mental model of Clean Local Tools before they read implementation details.</p>
+<p><strong>Branch status:</strong> this branch contains the experimental local-AI foundation. Hardware-recovery refinements and physical-device evidence continue on <code>test/webgpu-hardware-preview-v1</code>. Neither branch is deployed from <code>main</code>.</p>
+<h2 id="system-in-one-picture">System in one picture</h2>
+<pre><code class="language-text">                        CLEAN LOCAL TOOLS
+                              |
+                     Static website / PWA
+                              |
+        +---------------------+---------------------+
+        |                     |                     |
+     PDF tools            Image tools          Other tools
+        |                     |                     |
+        +---------------------+---------------------+
+                              |
+                    Browser-local execution
+                              |
+             +----------------+----------------+
+             |                                 |
+       JS / Canvas / WASM                  Local AI layer
+             |                                 |
+       Web Workers where                  Worker boundary
+         appropriate                           |
+                                      Model/runtime adapter
+                                               |
+                                      +--------+--------+
+                                      |                 |
+                                    WebGPU          CPU/WASM
+                                  when usable       fallback
+
+        USER WORKING FILES REMAIN INSIDE THE DEVICE BOUNDARY</code></pre>
+<h2 id="trust-boundary">Trust boundary</h2>
+<p>The most important architectural boundary is the user&#39;s device.</p>
+<p>Working documents and images selected for a local-processing tool should remain inside browser-controlled memory/storage on that device. They must not be transmitted to a remote processing endpoint while the tool presents the master promise <strong>“Your files never leave your machine.”</strong></p>
+<p>The website itself is delivered over the network. Some current tools also download JavaScript libraries, WebAssembly modules, or machine-learning model assets from third-party CDNs. Downloading application assets is different from uploading the user&#39;s working file, but it means those tools are not necessarily fully offline.</p>
+<h2 id="application-shape">Application shape</h2>
+<p>The project intentionally uses a low-infrastructure architecture:</p>
+<ul><li>static HTML;</li><li>CSS;</li><li>browser JavaScript;</li><li>browser APIs such as Canvas, File APIs, camera APIs, workers, service workers, and increasingly WebGPU;</li><li>selected third-party browser libraries/models;</li><li>no general-purpose application backend;</li><li>no database containing user working files;</li><li>no server-side file-processing pipeline.</li></ul>
+<p>GitHub Pages currently hosts production. Cloudflare currently manages the domain/DNS. Neither should be treated as part of the document-processing runtime.</p>
+<h2 id="tool-isolation">Tool isolation</h2>
+<p>Most tools live in their own route/directory and should be understandable as small applications. Shared architectural foundations may be introduced when they provide real leverage, such as the local AI runtime.</p>
+<p>Avoid creating a large framework dependency merely to make all tools look structurally identical. Shared abstractions should solve recurring problems.</p>
+<h2 id="local-ai-direction">Local AI direction</h2>
+<p>Local AI is being introduced as a reusable infrastructure layer rather than embedded directly into individual tool pages.</p>
+<p>Conceptually:</p>
+<pre><code class="language-text">Tool UI
+  |
+Local AI client
+  |
+Web Worker message boundary
+  |
+Model/runtime adapter
+  |
+Capability selection
+  |
++------------------+------------------+
+|                                     |
+WebGPU accelerated path           local fallback
+                                     CPU/WASM</code></pre>
+<p>Key properties:</p>
+<ul><li>feature code should not need to know the details of GPU initialization;</li><li>WebGPU is an acceleration path, not a requirement for the entire site;</li><li>unsupported or unhealthy GPU initialization must fail safely and within a bounded time;</li><li>expensive inference should stay away from the main UI thread when practical;</li><li>Safari/WebKit compatibility should be achieved through capability detection and fallback rather than browser-name checks;</li><li>models should eventually be accessed through adapters so the product is not permanently coupled to one AI framework.</li></ul>
+<h2 id="browser-compatibility-strategy">Browser compatibility strategy</h2>
+<p>The architecture follows progressive enhancement.</p>
+<p>A capability is detected at runtime. If it is available and successfully initializes, the optimized path can be used. Otherwise the tool should provide a local fallback or clearly explain that a specific optional feature is unavailable.</p>
+<p>Automated tests currently exercise Chromium, desktop WebKit, and a mobile WebKit/iPhone profile. A passing WebKit test proves application behavior in that automated browser environment. It does not automatically prove physical GPU behavior on every Safari/iPhone hardware combination.</p>
+<h2 id="privacy-architecture">Privacy architecture</h2>
+<p>The desired processing lifecycle is:</p>
+<pre><code class="language-text">User chooses file
+       |
+       v
+Browser memory / local browser storage if needed
+       |
+       v
+Local transformation / inference
+       |
+       v
+Result Blob / object URL
+       |
+       v
+User downloads or prints result
+       |
+       v
+Temporary working state released</code></pre>
+<p>Avoid persistent storage unless it provides a clear user benefit. If persistent local storage such as OPFS is introduced later, document retention and clearing behavior explicitly.</p>
+<h2 id="deployment-architecture">Deployment architecture</h2>
+<pre><code class="language-text">Git repository
+     |
+GitHub Actions quality gates
+     |
+    main
+     |
+GitHub Pages
+     |
+cleanlocaltools.com</code></pre>
+<p>The domain should remain portable. The static site can theoretically move to another competent static host without redesigning the local-processing tools.</p>
+<h2 id="architectural-priorities">Architectural priorities</h2>
+<p>When priorities conflict, use this order as a guide:</p>
+<ol><li>Correctness and user safety.</li><li>Truthful privacy behavior and claims.</li><li>Useful user experience.</li><li>Browser compatibility and graceful fallback.</li><li>Maintainability and testability.</li><li>Performance.</li><li>Novel technology.</li></ol>
+<p>A faster or more fashionable implementation is not an improvement if it weakens the privacy model or becomes impossible for future maintainers to verify.</p></div><nav class="doc-related" aria-label="Related pages"><a href="/">Home</a><a href="/about/">Mission &amp; vision</a><a href="/principles/">Principles</a></nav></article></div></main>
+<footer><div class="wrap site-footer-row"><span>© 2026 Clean Local Tools · Your files never leave your machine.</span><nav class="site-footer-nav" aria-label="Footer"><a class="toplink" href="/about/">About</a><a class="toplink" href="/principles/">Principles</a></nav></div></footer>
+</body>
+</html>

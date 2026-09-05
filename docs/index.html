@@ -1,0 +1,48 @@
+<!doctype html>
+<!-- Generated from docs/README.md by scripts/build-docs.js. Do not edit directly. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#ffffff">
+<meta name="description" content="Technical product and architecture documentation for Clean Local Tools.">
+<meta name="robots" content="noindex,follow,noarchive">
+<link rel="canonical" href="https://cleanlocaltools.com/docs/">
+<meta property="og:title" content="Clean Local Tools Handbook | Clean Local Tools">
+<meta property="og:description" content="Technical product and architecture documentation for Clean Local Tools.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://cleanlocaltools.com/docs/">
+<meta property="og:site_name" content="Clean Local Tools">
+<title>Clean Local Tools Handbook | Clean Local Tools</title>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"Clean Local Tools Handbook","description":"Technical product and architecture documentation for Clean Local Tools.","url":"https://cleanlocaltools.com/docs/","isPartOf":{"@type":"WebSite","name":"Clean Local Tools","url":"https://cleanlocaltools.com/"}}</script>
+<link rel="stylesheet" href="/assets/site.css?v=a78ae1a98127">
+<link rel="stylesheet" href="/assets/docs.css?v=ab6cc24636dd">
+</head>
+<body class="docs-page docs-technical">
+<header class="topbar"><div class="wrap"><div class="brand"><a href="/">Clean Local Tools</a></div><nav class="topnav" aria-label="Primary"><a class="toplink" href="/#all-tools">All tools</a><a class="toplink" href="/about/">About</a><a class="toplink" href="/principles/">Principles</a></nav></div></header>
+<main class="doc-main"><div class="wrap"><article class="doc-article"><div class="doc-kicker">Handbook</div><aside class="doc-status"><strong>Technical documentation</strong><span>This page records architecture and experimental direction. It is not a user-facing tool.</span></aside><div class="doc-content"><h1 id="clean-local-tools-handbook">Clean Local Tools Handbook</h1>
+<p>This directory is the durable human-and-AI-readable handbook for Clean Local Tools.</p>
+<p>If you are a future maintainer, contributor, automated coding agent, or AI assistant with no prior project context, <strong>start here</strong>. Do not assume undocumented knowledge from previous conversations.</p>
+<h2 id="what-this-project-is">What this project is</h2>
+<p>Clean Local Tools is a collection of useful browser-based tools designed around a simple idea: people should be able to perform everyday digital tasks without unnecessarily surrendering their files, personal information, or attention.</p>
+<p><strong>Master promise:</strong> <strong>Your files never leave your machine.</strong></p>
+<p>The intended product direction is private, local-first software that runs primarily in the user&#39;s browser. The project deliberately avoids a business model based on harvesting user data or filling utilities with advertising.</p>
+<h2 id="reading-order">Reading order</h2>
+<ol><li><a href="/about/">Mission and Vision</a></li><li><a href="/principles/">Principles</a></li><li><a href="01-purpose/project-continuity.md">Project Continuity</a></li><li><a href="/docs/architecture/">Architecture Overview</a></li><li><a href="/docs/architecture/hld/">High-Level Design</a></li><li><a href="/docs/architecture/lld/">Low-Level Design</a></li><li><a href="/docs/architecture/local-ai-models/">Experimental Local AI Models</a></li><li><a href="04-testing/testing-architecture-and-strategy.md">Testing Architecture and Strategy</a></li><li><a href="04-testing/test-results.md">Test Results</a></li><li><a href="05-development/adding-a-new-tool.md">Adding a New Tool</a></li></ol>
+<h2 id="documentation-rules">Documentation rules</h2>
+<p>These documents are part of the system, not promotional copy.</p>
+<ul><li>Write for a capable person who has never seen the repository before.</li><li>Also write so an AI coding agent can recover intent, constraints, architecture, and verification steps without relying on chat history.</li><li>Explain <strong>why</strong> important decisions exist, not only what the code currently does.</li><li>Clearly distinguish current behavior, architectural direction, and future ideas.</li><li>Never claim a privacy, offline, security, browser-compatibility, or test guarantee that the implementation does not actually prove.</li><li>Keep commands, paths, routes, interfaces, and invariants explicit.</li><li>Update documentation in the same change when architecture or operating assumptions change.</li><li>Record significant architectural choices as Architecture Decision Records (ADRs).</li><li>Prefer plain language first. Add technical detail where it helps a maintainer reproduce or verify the behavior.</li></ul>
+<h2 id="published-html">Published HTML</h2>
+<p>Pages with <code>render: true</code> are compiled by <code>scripts/build-docs.js</code>; generated HTML must not be edited directly. Markdown remains the content source of truth.</p>
+<ul><li><code>layout: brand</code> is reserved for public, indexable storytelling pages. A supported <code>variant</code>, <code>headline</code>, and <code>heroCopy</code> are required so the compiler can create the appropriate hero, section composition, navigation state, and closing action.</li><li>The default <code>document</code> layout is for technical handbook pages. These pages remain readable, restrained, and <code>noindex</code> unless a deliberate publishing decision changes that boundary.</li><li><code>assets/site.css</code> contains the shared homepage and documentation shell. <code>assets/docs.css</code> contains brand-page and technical-document composition.</li><li>Generated pages and the homepage use content-hashed stylesheet URLs so a deployment cannot leave visitors on stale presentation code.</li></ul>
+<h2 id="source-of-truth">Source of truth</h2>
+<p>The repository and its automated tests are the executable source of truth. This handbook explains intent and operation. If documentation and code disagree, investigate the discrepancy rather than silently assuming either one is correct.</p>
+<p>The permanent known-green historical reference branch is <code>baseline/clean-local-tools-ci-v1</code>. It must not be moved unless the project owner explicitly decides to redefine that baseline.</p>
+<h2 id="current-architecture-in-one-sentence">Current architecture in one sentence</h2>
+<p>Clean Local Tools is primarily a static HTML/CSS/JavaScript application hosted on GitHub Pages, with user-file processing performed in the browser and automated quality gates covering static invariants plus Chromium, desktop WebKit, and mobile WebKit workflows.</p>
+<p>Local AI remains isolated from production. This branch contains the experimental foundation; hardware-recovery refinements and physical-device evidence continue on <code>test/webgpu-hardware-preview-v1</code> until the capability is ready for a separate promotion decision.</p>
+<h2 id="stewardship">Stewardship</h2>
+<p>The project is intended to outlive any single maintainer, including its founder. No essential operating knowledge should exist only in one person&#39;s memory, laptop, private notes, or AI conversation history.</p></div><nav class="doc-related" aria-label="Related pages"><a href="/">Home</a><a href="/about/">Mission &amp; vision</a><a href="/principles/">Principles</a></nav></article></div></main>
+<footer><div class="wrap site-footer-row"><span>© 2026 Clean Local Tools · Your files never leave your machine.</span><nav class="site-footer-nav" aria-label="Footer"><a class="toplink" href="/about/">About</a><a class="toplink" href="/principles/">Principles</a></nav></div></footer>
+</body>
+</html>

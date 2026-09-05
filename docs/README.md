@@ -1,3 +1,12 @@
+---
+render: true
+title: Clean Local Tools Handbook
+description: Technical product and architecture documentation for Clean Local Tools.
+route: /docs/
+index: false
+section: Handbook
+---
+
 # Clean Local Tools Handbook
 
 This directory is the durable human-and-AI-readable handbook for Clean Local Tools.
@@ -20,7 +29,7 @@ The intended product direction is private, local-first software that runs primar
 4. [Architecture Overview](03-architecture/architecture-overview.md)
 5. [High-Level Design](03-architecture/hld.md)
 6. [Low-Level Design](03-architecture/lld.md)
-7. [Local AI Models](03-architecture/local-ai-models.md)
+7. [Experimental Local AI Models](03-architecture/local-ai-models.md)
 8. [Testing Architecture and Strategy](04-testing/testing-architecture-and-strategy.md)
 9. [Test Results](04-testing/test-results.md)
 10. [Adding a New Tool](05-development/adding-a-new-tool.md)
@@ -39,6 +48,15 @@ These documents are part of the system, not promotional copy.
 - Record significant architectural choices as Architecture Decision Records (ADRs).
 - Prefer plain language first. Add technical detail where it helps a maintainer reproduce or verify the behavior.
 
+## Published HTML
+
+Pages with `render: true` are compiled by `scripts/build-docs.js`; generated HTML must not be edited directly. Markdown remains the content source of truth.
+
+- `layout: brand` is reserved for public, indexable storytelling pages. A supported `variant`, `headline`, and `heroCopy` are required so the compiler can create the appropriate hero, section composition, navigation state, and closing action.
+- The default `document` layout is for technical handbook pages. These pages remain readable, restrained, and `noindex` unless a deliberate publishing decision changes that boundary.
+- `assets/site.css` contains the shared homepage and documentation shell. `assets/docs.css` contains brand-page and technical-document composition.
+- Generated pages and the homepage use content-hashed stylesheet URLs so a deployment cannot leave visitors on stale presentation code.
+
 ## Source of truth
 
 The repository and its automated tests are the executable source of truth. This handbook explains intent and operation. If documentation and code disagree, investigate the discrepancy rather than silently assuming either one is correct.
@@ -48,6 +66,8 @@ The permanent known-green historical reference branch is `baseline/clean-local-t
 ## Current architecture in one sentence
 
 Clean Local Tools is primarily a static HTML/CSS/JavaScript application hosted on GitHub Pages, with user-file processing performed in the browser and automated quality gates covering static invariants plus Chromium, desktop WebKit, and mobile WebKit workflows.
+
+Local AI remains isolated from production. This branch contains the experimental foundation; hardware-recovery refinements and physical-device evidence continue on `test/webgpu-hardware-preview-v1` until the capability is ready for a separate promotion decision.
 
 ## Stewardship
 
