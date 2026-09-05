@@ -37,3 +37,28 @@ test('brand guide preserves private, local, and earned-offline positioning',()=>
 test('browser tests avoid fixed sleeps and runaway assertion timeouts',()=>{const testsDir=path.join(root,'tests'),specs=fs.readdirSync(testsDir).filter(name=>name.endsWith('.spec.js'));for(const spec of specs){const source=fs.readFileSync(path.join(testsDir,spec),'utf8');assert.doesNotMatch(source,/waitForTimeout\s*\(/,`${spec} contains a fixed sleep`);for(const match of source.matchAll(/timeout\s*:\s*(\d+)/g))assert.ok(Number(match[1])<=30000,`${spec} contains timeout ${match[1]}ms`);}});
 test('every tool family keeps a dedicated deep browser spec',()=>{const expected=['passport-photo.spec.js','japa-touchless.spec.js','japa-tap.spec.js','compress-pdf.spec.js','merge-pdf.spec.js','resize-image.spec.js','clean-pdf-printer.spec.js','document-flattener.spec.js','image-to-pdf.spec.js','split-pdf.spec.js','heic-to-jpg.spec.js','remove-photo-metadata.spec.js','qr-code-maker.spec.js'];for(const spec of expected)assert.ok(fs.existsSync(path.join(root,'tests',spec)),`${spec} missing`);});
 test('CI keeps bounded, fail-fast static, Chromium, and compatibility gates',()=>{const workflow=read('.github/workflows/tests.yml'),config=read('playwright.config.js'),pkg=JSON.parse(read('package.json'));assert.match(workflow,/static:\s*[\s\S]*timeout-minutes:\s*3/);assert.match(workflow,/chromium:\s*[\s\S]*timeout-minutes:\s*8/);assert.match(workflow,/compatibility:\s*[\s\S]*timeout-minutes:\s*6/);assert.doesNotMatch(workflow,/container:\s*\n\s*image:\s*mcr\.microsoft\.com\/playwright/,'browser jobs must stay on the GitHub runner');assert.equal((workflow.match(/uses: actions\/cache@v4/g)||[]).length,2,'both browser jobs must cache Playwright browsers');assert.equal((workflow.match(/path: ~\/\.cache\/ms-playwright/g)||[]).length,2,'both browser jobs must cache the Playwright browser directory');assert.ok(workflow.includes('playwright-1.62.1-chromium'));assert.ok(workflow.includes('playwright-1.62.1-webkit'));assert.ok(workflow.includes('npx playwright install-deps chromium'));assert.ok(workflow.includes('npx playwright install-deps webkit'));assert.ok(workflow.includes("if: steps.playwright-cache.outputs.cache-hit != 'true'"));assert.ok(workflow.includes('npx playwright install chromium'));assert.ok(workflow.includes('npx playwright install webkit'));assert.ok(workflow.includes('cancel-in-progress: true'));assert.doesNotMatch(workflow,/continue-on-error:\s*true/);assert.doesNotMatch(workflow,/Enforce (static checks|deep Chromium result|compatibility result)/);for(const stepName of ['Site metadata and catalog','Test architecture and hygiene','Core and Japa deep tests','PDF deep tests','Image and catalog deep tests','Desktop WebKit smoke','iPhone WebKit smoke'])assert.ok(workflow.includes(`name: ${stepName}`),`missing diagnostic step ${stepName}`);assert.equal(pkg.devDependencies['@playwright/test'],'1.62.1','Playwright version must stay pinned for deterministic browser caches');assert.equal(pkg.scripts['test:static'],'node --test tests/static/*.test.js');assert.ok(pkg.scripts['test:chromium:core']);assert.ok(pkg.scripts['test:chromium:pdf']);assert.ok(pkg.scripts['test:chromium:image']);assert.ok(pkg.scripts['test:compat:webkit']);assert.ok(pkg.scripts['test:compat:mobile']);assert.ok(config.includes('timeout: 30000'));assert.ok(config.includes("trace: 'on-first-retry'"));assert.ok(config.includes('all-tools-regression\\.spec\\.js'));});
+
+test('homepage brand documentation preserves approved mission and experimental AI boundary',()=>{
+  const required=[
+    'docs/README.md',
+    'docs/01-purpose/mission-and-vision.md',
+    'docs/01-purpose/principles.md',
+    'docs/03-architecture/architecture-overview.md',
+    'docs/03-architecture/hld.md',
+    'docs/03-architecture/lld.md',
+    'docs/03-architecture/local-ai-models.md'
+  ];
+  for(const relative of required)assert.ok(fs.existsSync(path.join(root,relative)),relative+' missing');
+  const index=read('docs/README.md');
+  for(const relative of required.slice(1))assert.ok(index.includes(relative.slice(5)),relative+' not linked from handbook index');
+  const mission=read('docs/01-purpose/mission-and-vision.md');
+  for(const phrase of ['Democratize useful digital tools','Your files never leave your machine.','Offline is an earned property'])assert.ok(mission.includes(phrase),'mission missing: '+phrase);
+  const principles=read('docs/01-purpose/principles.md');
+  for(const phrase of ['No advertising as a product dependency','No unnecessary accounts','Privacy is architecture','Local-first does not mean run at any cost'])assert.ok(principles.includes(phrase),'principles missing: '+phrase);
+  for(const relative of required.slice(3)){
+    const design=read(relative);
+    assert.ok(design.includes('test/webgpu-hardware-preview-v1'),
+      relative+' must identify the isolated experimental implementation');
+  }
+  assert.ok(read('docs/03-architecture/local-ai-models.md').includes('experimental and not deployed from `main`'));
+});
