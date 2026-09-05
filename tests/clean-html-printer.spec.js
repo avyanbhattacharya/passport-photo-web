@@ -66,8 +66,8 @@ test('print settings reach the isolated document and selection never prints', as
   await page.locator('#paper').selectOption('Letter');
   await page.locator('#orientation').selectOption('landscape');
   await page.locator('#fontSize').selectOption('14');
-  await expect(doc.locator('#printStyles')).toContainText('size:Letter landscape');
-  await expect(doc.locator('#printStyles')).toContainText('font-size:14pt');
+  await expect(doc.locator('#printStyles')).toHaveJSProperty('textContent', expect.stringContaining('size:Letter landscape'));
+  await expect(doc.locator('#printStyles')).toHaveJSProperty('textContent', expect.stringContaining('font-size:14pt'));
   await page.locator('#preview').evaluate(frame => { frame.contentWindow.print = () => { frame.dataset.printed = 'yes'; }; });
   await doc.getByText('Keep this paragraph').click();
   await page.locator('#print').click();
