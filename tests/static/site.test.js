@@ -71,7 +71,7 @@ test('homepage generated documentation respects public and technical publishing 
   for(const relative of ['about/index.html','principles/index.html']){
     const html=read(relative);
     assert.ok(html.includes('Generated from docs/'),relative+' should identify its Markdown source');
-    assert.ok(html.includes('/assets/style.css'),relative+' should use the shared site styles');
+    assert.ok(!html.includes('/assets/style.css'),relative+' should not inherit tool-page layout styles');
     assert.ok(html.includes('/assets/docs.css'),relative+' should use the documentation styles');
     assert.doesNotMatch(html,/content="[^"]*noindex/i,relative+' should be indexable');
   }

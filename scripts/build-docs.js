@@ -243,10 +243,9 @@ function renderPage(page, routeMap) {
 <meta property="og:site_name" content="Clean Local Tools">
 <title>${escapeHtml(meta.title)} | Clean Local Tools</title>
 <script type="application/ld+json">${structuredData}</script>
-<link rel="stylesheet" href="/assets/style.css">
 <link rel="stylesheet" href="/assets/docs.css">
 </head>
-<body class="docs-page">
+<body class="docs-page ${meta.index === true ? 'docs-public' : 'docs-technical'}">
 <header class="doc-topbar"><div class="wrap"><div class="doc-brand"><a href="/">Clean Local Tools</a></div><nav aria-label="Primary"><a href="/#all-tools">All tools</a><a href="/about/">About</a></nav></div></header>
 <main class="doc-main"><div class="wrap"><article class="doc-article"><div class="doc-kicker">${escapeHtml(meta.section)}</div>${technicalNote}<div class="doc-content">${content}</div><nav class="doc-related" aria-label="Related pages"><a href="/">Home</a><a href="/about/">Mission &amp; vision</a><a href="/principles/">Principles</a></nav></article></div></main>
 <footer class="doc-footer"><div class="wrap"><span>© 2026 Clean Local Tools · Your files never leave your machine.</span><a href="/about/">About</a></div></footer>

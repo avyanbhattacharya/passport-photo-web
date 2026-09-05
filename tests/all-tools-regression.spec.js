@@ -68,3 +68,30 @@ for (const [route, heading] of tools) {
     expect(brokenLocal, `broken local assets on ${route}`).toEqual([]);
   });
 }
+
+test('documentation pages use the open site-aligned editorial layout', async ({ page }) => {
+  await page.goto('/about/', { waitUntil: 'domcontentloaded' });
+  const metrics = await page.evaluate(() => {
+    const article = document.querySelector('.doc-article');
+    const content = document.querySelector('.doc-content');
+    const articleBox = article.getBoundingClientRect();
+    const contentBox = content.getBoundingClientRect();
+    const articleStyle = getComputedStyle(article);
+    return {
+      viewportWidth: document.documentElement.clientWidth,
+      articleLeft: articleBox.left,
+      articleWidth: articleBox.width,
+      contentLeft: contentBox.left,
+      contentWidth: contentBox.width,
+      articleBackground: articleStyle.backgroundColor,
+      articleBorderWidth: articleStyle.borderTopWidth,
+      articleRadius: articleStyle.borderTopLeftRadius
+    };
+  });
+  expect(metrics.articleWidth).toBeGreaterThan(Math.min(metrics.viewportWidth - 80, 900));
+  expect(Math.abs(metrics.articleLeft - metrics.contentLeft)).toBeLessThanOrEqual(1);
+  expect(metrics.contentWidth).toBeLessThanOrEqual(760);
+  expect(metrics.articleBackground).toBe('rgba(0, 0, 0, 0)');
+  expect(metrics.articleBorderWidth).toBe('0px');
+  expect(metrics.articleRadius).toBe('0px');
+});
