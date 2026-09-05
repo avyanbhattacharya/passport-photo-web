@@ -72,7 +72,9 @@ test('homepage generated documentation respects public and technical publishing 
     const html=read(relative);
     assert.ok(html.includes('Generated from docs/'),relative+' should identify its Markdown source');
     assert.ok(!html.includes('/assets/style.css'),relative+' should not inherit tool-page layout styles');
+    assert.ok(html.includes('/assets/site.css'),relative+' should use the shared site shell');
     assert.ok(html.includes('/assets/docs.css'),relative+' should use the documentation styles');
+    assert.ok(html.includes('class="docs-page docs-public brand-page'),relative+' should use a public brand layout');
     assert.doesNotMatch(html,/content="[^"]*noindex/i,relative+' should be indexable');
   }
   const technical=[
@@ -98,7 +100,7 @@ test('CI keeps generated documentation reproducible',()=>{
   assert.ok(workflow.includes('name: Generated documentation'));
   assert.ok(workflow.includes('run: |'));
   assert.ok(workflow.includes('npm run build:docs'));
-  assert.ok(workflow.includes('git diff --exit-code -- about principles docs sitemap.xml'));
+  assert.ok(workflow.includes('git diff --exit-code -- index.html about principles docs sitemap.xml'));
   assert.ok(workflow.includes('npm run test:docs'));
   assert.equal(pkg.scripts['build:docs'],'node scripts/build-docs.js --write');
   assert.equal(pkg.scripts['check:docs'],'node scripts/build-docs.js --check');

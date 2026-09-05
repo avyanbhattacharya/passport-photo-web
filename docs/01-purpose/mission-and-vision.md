@@ -5,6 +5,10 @@ description: Why Clean Local Tools builds simple, private utilities that work on
 route: /about/
 index: true
 section: About Clean Local Tools
+layout: brand
+variant: mission
+headline: Useful tools without surrendering your files.
+heroCopy: Clean Local Tools builds practical utilities that work on your device, without accounts, advertising, or uploading your working files for processing.
 ---
 
 # Mission and Vision

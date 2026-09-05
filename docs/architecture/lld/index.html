@@ -15,10 +15,11 @@
 <meta property="og:site_name" content="Clean Local Tools">
 <title>Low-Level Design | Clean Local Tools</title>
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"Low-Level Design","description":"Implementation conventions and invariants for Clean Local Tools.","url":"https://cleanlocaltools.com/docs/architecture/lld/","isPartOf":{"@type":"WebSite","name":"Clean Local Tools","url":"https://cleanlocaltools.com/"}}</script>
-<link rel="stylesheet" href="/assets/docs.css?v=932eba38b091">
+<link rel="stylesheet" href="/assets/site.css?v=a78ae1a98127">
+<link rel="stylesheet" href="/assets/docs.css?v=ab6cc24636dd">
 </head>
 <body class="docs-page docs-technical">
-<header class="doc-topbar"><div class="wrap"><div class="doc-brand"><a href="/">Clean Local Tools</a></div><nav aria-label="Primary"><a href="/#all-tools">All tools</a><a href="/about/">About</a></nav></div></header>
+<header class="topbar"><div class="wrap"><div class="brand"><a href="/">Clean Local Tools</a></div><nav class="topnav" aria-label="Primary"><a class="toplink" href="/#all-tools">All tools</a><a class="toplink" href="/about/">About</a><a class="toplink" href="/principles/">Principles</a></nav></div></header>
 <main class="doc-main"><div class="wrap"><article class="doc-article"><div class="doc-kicker">Technical documentation</div><aside class="doc-status"><strong>Technical documentation</strong><span>This page records architecture and experimental direction. It is not a user-facing tool.</span></aside><div class="doc-content"><h1 id="low-level-design-lld">Low-Level Design (LLD)</h1>
 <h2 id="purpose">Purpose</h2>
 <p>This document describes implementation-level conventions and invariants that should survive individual refactors. It is intentionally a living document. When a subsystem becomes complex enough to deserve its own LLD, link that document from here.</p>
@@ -122,6 +123,6 @@ unsupported code: local-ai-device-not-supported</code></pre>
 <h2 id="definition-of-implementation-completeness">Definition of implementation completeness</h2>
 <p>A new subsystem is not complete until:</p>
 <ul><li>behavior exists;</li><li>failure/fallback paths are defined;</li><li>compute policy is explicit for heavy local models;</li><li>tests cover meaningful behavior;</li><li>CI is green;</li><li>relevant architecture/operations docs are updated;</li><li>user-facing privacy and compatibility claims accurately describe the implementation.</li></ul></div><nav class="doc-related" aria-label="Related pages"><a href="/">Home</a><a href="/about/">Mission &amp; vision</a><a href="/principles/">Principles</a></nav></article></div></main>
-<footer class="doc-footer"><div class="wrap"><span>© 2026 Clean Local Tools · Your files never leave your machine.</span><a href="/about/">About</a></div></footer>
+<footer><div class="wrap site-footer-row"><span>© 2026 Clean Local Tools · Your files never leave your machine.</span><nav class="site-footer-nav" aria-label="Footer"><a class="toplink" href="/about/">About</a><a class="toplink" href="/principles/">Principles</a></nav></div></footer>
 </body>
 </html>

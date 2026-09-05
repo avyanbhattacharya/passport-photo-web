@@ -15,8 +15,8 @@ const tools = [
   ['/heic-to-jpg/', /HEIC to JPG/i],
   ['/remove-photo-metadata/', /Remove Photo Metadata/i],
   ['/qr-code-maker/', /QR Code Maker/i],
-  ['/about/', /Mission and Vision/i],
-  ['/principles/', /Project Principles/i]
+  ['/about/', /Useful tools without surrendering your files/i],
+  ['/principles/', /Principles that keep the promise honest/i]
 ];
 
 for (const [route, heading] of tools) {
@@ -69,29 +69,28 @@ for (const [route, heading] of tools) {
   });
 }
 
-test('documentation pages use the open site-aligned editorial layout', async ({ page }) => {
+test('public documentation pages use the composed brand layout', async ({ page }) => {
   await page.goto('/about/', { waitUntil: 'domcontentloaded' });
   const metrics = await page.evaluate(() => {
-    const article = document.querySelector('.doc-article');
-    const content = document.querySelector('.doc-content');
-    const articleBox = article.getBoundingClientRect();
-    const contentBox = content.getBoundingClientRect();
-    const articleStyle = getComputedStyle(article);
+    const hero = document.querySelector('.brand-hero-grid');
+    const heroBox = hero.getBoundingClientRect();
     return {
       viewportWidth: document.documentElement.clientWidth,
-      articleLeft: articleBox.left,
-      articleWidth: articleBox.width,
-      contentLeft: contentBox.left,
-      contentWidth: contentBox.width,
-      articleBackground: articleStyle.backgroundColor,
-      articleBorderWidth: articleStyle.borderTopWidth,
-      articleRadius: articleStyle.borderTopLeftRadius
+      heroWidth: heroBox.width,
+      heroColumns: getComputedStyle(hero).gridTemplateColumns,
+      valueCount: document.querySelectorAll('.brand-value').length,
+      storyCount: document.querySelectorAll('.brand-story-section').length,
+      trustCardCount: document.querySelectorAll('.brand-trust-card').length,
+      activeNav: document.querySelector('[aria-current="page"]')?.textContent,
+      hasLegacyArticle: Boolean(document.querySelector('.doc-article'))
     };
   });
-  expect(metrics.articleWidth).toBeGreaterThan(Math.min(metrics.viewportWidth - 80, 900));
-  expect(Math.abs(metrics.articleLeft - metrics.contentLeft)).toBeLessThanOrEqual(1);
-  expect(metrics.contentWidth).toBeLessThanOrEqual(760);
-  expect(metrics.articleBackground).toBe('rgba(0, 0, 0, 0)');
-  expect(metrics.articleBorderWidth).toBe('0px');
-  expect(metrics.articleRadius).toBe('0px');
+  expect(metrics.heroWidth).toBeGreaterThan(Math.min(metrics.viewportWidth - 80, 900));
+  expect(metrics.valueCount).toBe(3);
+  expect(metrics.storyCount).toBeGreaterThanOrEqual(4);
+  expect(metrics.trustCardCount).toBe(2);
+  expect(metrics.activeNav).toBe('About');
+  expect(metrics.hasLegacyArticle).toBe(false);
+  if (metrics.viewportWidth > 820) expect(metrics.heroColumns.split(' ').length).toBe(2);
+  else expect(metrics.heroColumns.split(' ').length).toBe(1);
 });

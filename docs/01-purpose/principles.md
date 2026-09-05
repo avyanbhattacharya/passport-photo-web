@@ -5,11 +5,15 @@ description: The privacy, simplicity, accessibility, and engineering principles 
 route: /principles/
 index: true
 section: About Clean Local Tools
+layout: brand
+variant: principles
+headline: Principles that keep the promise honest.
+heroCopy: Privacy should be supported by product decisions, architecture, plain language, and tests—not left as a policy-page claim.
 ---
 
 # Project Principles
 
-These principles are constraints on product and engineering decisions. A future maintainer should preserve them unless there is a deliberate, documented project-level decision to change the project's purpose.
+These principles turn the privacy promise into product and engineering constraints. They should change only through a deliberate, documented project-level decision—not through convenience or drift.
 
 ## 1. Build for people, not data extraction
 

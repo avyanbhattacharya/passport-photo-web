@@ -44,6 +44,15 @@ These documents are part of the system, not promotional copy.
 - Record significant architectural choices as Architecture Decision Records (ADRs).
 - Prefer plain language first. Add technical detail where it helps a maintainer reproduce or verify the behavior.
 
+## Published HTML
+
+Pages with `render: true` are compiled by `scripts/build-docs.js`; generated HTML must not be edited directly. Markdown remains the content source of truth.
+
+- `layout: brand` is reserved for public, indexable storytelling pages. A supported `variant`, `headline`, and `heroCopy` are required so the compiler can create the appropriate hero, section composition, navigation state, and closing action.
+- The default `document` layout is for technical handbook pages. These pages remain readable, restrained, and `noindex` unless a deliberate publishing decision changes that boundary.
+- `assets/site.css` contains the shared homepage and documentation shell. `assets/docs.css` contains brand-page and technical-document composition.
+- Generated pages and the homepage use content-hashed stylesheet URLs so a deployment cannot leave visitors on stale presentation code.
+
 ## Source of truth
 
 The repository and its automated tests are the executable source of truth. This handbook explains intent and operation. If documentation and code disagree, investigate the discrepancy rather than silently assuming either one is correct.
