@@ -17,6 +17,10 @@ This document describes implementation-level conventions and invariants that sho
 
 ## Repository model
 
+### Clean HTML Printer
+
+The HTML printer introduces an untrusted-markup import boundary and an isolated editable print document. See [Clean HTML Printer](clean-html-printer.md) for the sanitization allowlist, sandbox/CSP layers, reflow behavior, history limits and print verification boundary.
+
 Public tools are generally directory-based routes containing their own browser application assets. Shared infrastructure should be placed in clearly named shared locations rather than copied into every tool once reuse becomes meaningful.
 
 Before modifying an existing file, read the current branch version first. Do not reconstruct a large production file from an old copy or partial tool output.

@@ -25,6 +25,8 @@
 <p>This document describes implementation-level conventions and invariants that should survive individual refactors. It is intentionally a living document. When a subsystem becomes complex enough to deserve its own LLD, link that document from here.</p>
 <p><strong>Status on <code>main</code>:</strong> ordinary browser-local tool conventions apply to production. Local AI contracts and model-specific details document the isolated <code>test/webgpu-hardware-preview-v1</code> experiment and are retained here as design constraints, not as a claim that the runtime is deployed on <code>main</code>.</p>
 <h2 id="repository-model">Repository model</h2>
+<h3 id="clean-html-printer">Clean HTML Printer</h3>
+<p>The HTML printer introduces an untrusted-markup import boundary and an isolated editable print document. See <a href="clean-html-printer.md">Clean HTML Printer</a> for the sanitization allowlist, sandbox/CSP layers, reflow behavior, history limits and print verification boundary.</p>
 <p>Public tools are generally directory-based routes containing their own browser application assets. Shared infrastructure should be placed in clearly named shared locations rather than copied into every tool once reuse becomes meaningful.</p>
 <p>Before modifying an existing file, read the current branch version first. Do not reconstruct a large production file from an old copy or partial tool output.</p>
 <h2 id="local-file-lifecycle">Local file lifecycle</h2>
