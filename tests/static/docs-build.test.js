@@ -43,8 +43,9 @@ test('generated pages use the standalone open editorial shell',()=>{
   const technicalHtml=docs.renderPage(technicalPage,routes);
   assert.match(publicHtml,/<body class="docs-page docs-public">/);
   assert.match(technicalHtml,/<body class="docs-page docs-technical">/);
-  assert.match(publicHtml,/<link rel="stylesheet" href="\/assets\/docs\.css">/);
+  assert.match(publicHtml,/<link rel="stylesheet" href="\/assets\/docs\.css\?v=[a-f0-9]{12}">/);
   assert.doesNotMatch(publicHtml,/\/assets\/style\.css/);
+  assert.equal(docs.assetVersion('assets/docs.css',root).length,12);
   const css=require('node:fs').readFileSync(path.join(root,'assets/docs.css'),'utf8');
   assert.match(css,/\.docs-page \.wrap\{width:min\(1040px,calc\(100% - 40px\)\)/);
   assert.match(css,/\.doc-article\{[^}]*background:transparent;border:0;border-radius:0;box-shadow:none/);

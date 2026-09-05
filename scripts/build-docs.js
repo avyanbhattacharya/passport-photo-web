@@ -3,6 +3,7 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
+const crypto = require('node:crypto');
 const posix = path.posix;
 
 const ROOT = path.resolve(__dirname, '..');
@@ -208,7 +209,14 @@ function renderMarkdown(markdown, currentSource, routeMap) {
   return output.join('\n');
 }
 
-function renderPage(page, routeMap) {
+function assetVersion(relativePath, rootDir = ROOT) {
+  return crypto.createHash('sha256')
+    .update(fs.readFileSync(path.join(rootDir, relativePath)))
+    .digest('hex')
+    .slice(0, 12);
+}
+
+function renderPage(page, routeMap, docsCssVersion = assetVersion('assets/docs.css')) {
   const { meta } = page;
   const canonical = `https://cleanlocaltools.com${meta.route}`;
   const robots = meta.index === true
@@ -243,7 +251,7 @@ function renderPage(page, routeMap) {
 <meta property="og:site_name" content="Clean Local Tools">
 <title>${escapeHtml(meta.title)} | Clean Local Tools</title>
 <script type="application/ld+json">${structuredData}</script>
-<link rel="stylesheet" href="/assets/docs.css">
+<link rel="stylesheet" href="/assets/docs.css?v=${docsCssVersion}">
 </head>
 <body class="docs-page ${meta.index === true ? 'docs-public' : 'docs-technical'}">
 <header class="doc-topbar"><div class="wrap"><div class="doc-brand"><a href="/">Clean Local Tools</a></div><nav aria-label="Primary"><a href="/#all-tools">All tools</a><a href="/about/">About</a></nav></div></header>
@@ -268,7 +276,8 @@ function renderSitemap(current, pages) {
 function build(rootDir = ROOT) {
   const pages = collectPages(rootDir);
   const routeMap = new Map(pages.map(page => [page.source, page.meta.route]));
-  const outputs = new Map(pages.map(page => [page.output, renderPage(page, routeMap)]));
+  const docsCssVersion = assetVersion('assets/docs.css', rootDir);
+  const outputs = new Map(pages.map(page => [page.output, renderPage(page, routeMap, docsCssVersion)]));
   const sitemapPath = path.join(rootDir, 'sitemap.xml');
   outputs.set('sitemap.xml', renderSitemap(fs.readFileSync(sitemapPath, 'utf8'), pages));
   return { pages, outputs };
@@ -307,4 +316,4 @@ if (require.main === module) {
   }
 }
 
-module.exports = { escapeHtml, parseFrontMatter, collectPages, rewriteLink, renderInline, renderMarkdown, renderPage, renderSitemap, build, writeBuild, checkBuild };
+module.exports = { escapeHtml, parseFrontMatter, collectPages, rewriteLink, renderInline, renderMarkdown, assetVersion, renderPage, renderSitemap, build, writeBuild, checkBuild };
