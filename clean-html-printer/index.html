@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="Your files never leave your machine. Remove images and unwanted sections from HTML, reflow the content, and print less with Clean HTML Printer.">
+<meta name="robots" content="index,follow"><link rel="canonical" href="https://cleanlocaltools.com/clean-html-printer/">
+<title>Clean HTML Printer — Remove Clutter &amp; Print Less | Clean Local Tools</title>
+<link rel="stylesheet" href="/assets/site.css"><link rel="stylesheet" href="style.css">
+</head><body>
+<header class="topbar"><div class="wrap"><div class="brand"><a href="/">Clean Local Tools</a></div><nav class="topnav"><a class="toplink" href="/">All tools</a><a class="toplink" href="/about/">About</a></nav></div></header>
+<main class="wrap"><section class="hero"><span class="eyebrow">Keep what matters</span><h1>Clean HTML Printer</h1><p>Remove the clutter. Close the gaps. Print less.</p></section>
+<p class="privacy"><strong>Your files never leave your machine.</strong> Editing happens right on this device. Nothing is uploaded for processing.</p>
+<section class="card" aria-labelledby="openHeading"><h2 id="openHeading">Start with your HTML</h2><label class="file-label" for="htmlFile">Choose a saved HTML file</label><input id="htmlFile" type="file" accept=".html,.htm,text/html">
+<details><summary>Or paste HTML</summary><label for="source">HTML source</label><textarea id="source" rows="6" placeholder="Paste HTML here…" spellcheck="false"></textarea><button id="openPaste" class="button">Open pasted HTML</button></details>
+<p class="muted">Up to 2 MB. We use a clean reading layout, not an exact copy of the website. Scripts and original styles are removed. Embedded PNG, JPEG, GIF and WebP images are kept; remote images and companion files are not loaded.</p><p id="error" role="alert"></p></section>
+<section id="editor" class="card" hidden aria-label="HTML editor">
+<div class="section-heading"><h2>Your print copy</h2><span id="fileName" class="muted"></span></div>
+<p class="muted">Click or tap content to select it. Use “Select enclosing section” for a larger box, then remove it. Tab through content and press Enter to select with a keyboard.</p>
+<div class="toolbar"><button id="remove" disabled>Remove selected</button><button id="parent" disabled>Select enclosing section</button><button id="images">Remove all images</button><button id="undo" disabled>Undo</button><button id="redo" disabled>Redo</button><button id="reset">Reset edits</button></div>
+<p id="selection" aria-live="polite">Nothing selected</p>
+<div class="settings"><label>Paper<select id="paper"><option value="A4">A4</option><option value="Letter">US Letter</option></select></label><label>Orientation<select id="orientation"><option value="portrait">Portrait</option><option value="landscape">Landscape</option></select></label><label>Margins<select id="margin"><option value="12">12 mm</option><option value="8">8 mm</option><option value="20">20 mm</option></select></label><label>Text size<select id="fontSize"><option value="12">12 pt</option><option value="10">10 pt</option><option value="14">14 pt</option><option value="16">16 pt</option></select></label></div>
+<iframe id="preview" title="Editable print document" sandbox="allow-same-origin allow-scripts allow-modals" referrerpolicy="no-referrer"></iframe>
+<div class="toolbar bottom"><button id="print" class="button">Print / Save as PDF</button></div><p id="status" role="status"></p><p class="muted">The browser print dialog shows final page breaks and lets you save as PDF. Turn off browser headers and footers there if you don’t want them.</p>
+</section>
+<section class="explanation"><h2>Real removal. Not a white overlay.</h2><p>Images, paragraphs, tables and whole sections can be removed from the document. The remaining content flows together. Undo or reset at any time; your original file stays unchanged.</p><h2>A simpler page, by design</h2><p>Complex web layouts become readable blocks. Links are kept as text, forms and embedded media are omitted, and online images are not fetched. This helps protect your privacy and avoids empty spaces left by fixed website layouts.</p></section>
+</main><footer><div class="wrap">Clean Local Tools · Your files never leave your machine.</div></footer><script src="app.js" defer></script></body></html>

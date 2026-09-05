@@ -1,6 +1,7 @@
 const { test, expect } = require('@playwright/test');
 
 const tools = [
+  ['/clean-html-printer/', /Clean HTML Printer/i],
   ['/', /Useful file tools/i],
   ['/passport-photo/', /Passport Photo/i],
   ['/japa-counter/', /Japa Counter/i],
