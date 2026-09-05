@@ -1,8 +1,19 @@
+---
+render: true
+title: Low-Level Design
+description: Implementation conventions and invariants for Clean Local Tools.
+route: /docs/architecture/lld/
+index: false
+section: Technical documentation
+---
+
 # Low-Level Design (LLD)
 
 ## Purpose
 
 This document describes implementation-level conventions and invariants that should survive individual refactors. It is intentionally a living document. When a subsystem becomes complex enough to deserve its own LLD, link that document from here.
+
+**Branch status:** this branch contains the experimental local-AI implementation, hardware-recovery refinements, and physical-device evidence. It is not deployed from `main`.
 
 ## Repository model
 

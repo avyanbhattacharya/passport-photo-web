@@ -1,0 +1,108 @@
+<!doctype html>
+<!-- Generated from docs/03-architecture/hld.md by scripts/build-docs.js. Do not edit directly. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#ffffff">
+<meta name="description" content="High-level component, trust-boundary, and data-flow design for Clean Local Tools.">
+<meta name="robots" content="noindex,follow,noarchive">
+<link rel="canonical" href="https://cleanlocaltools.com/docs/architecture/hld/">
+<meta property="og:title" content="High-Level Design | Clean Local Tools">
+<meta property="og:description" content="High-level component, trust-boundary, and data-flow design for Clean Local Tools.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://cleanlocaltools.com/docs/architecture/hld/">
+<meta property="og:site_name" content="Clean Local Tools">
+<title>High-Level Design | Clean Local Tools</title>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"High-Level Design","description":"High-level component, trust-boundary, and data-flow design for Clean Local Tools.","url":"https://cleanlocaltools.com/docs/architecture/hld/","isPartOf":{"@type":"WebSite","name":"Clean Local Tools","url":"https://cleanlocaltools.com/"}}</script>
+<link rel="stylesheet" href="/assets/site.css?v=a78ae1a98127">
+<link rel="stylesheet" href="/assets/docs.css?v=ab6cc24636dd">
+</head>
+<body class="docs-page docs-technical">
+<header class="topbar"><div class="wrap"><div class="brand"><a href="/">Clean Local Tools</a></div><nav class="topnav" aria-label="Primary"><a class="toplink" href="/#all-tools">All tools</a><a class="toplink" href="/about/">About</a><a class="toplink" href="/principles/">Principles</a></nav></div></header>
+<main class="doc-main"><div class="wrap"><article class="doc-article"><div class="doc-kicker">Technical documentation</div><aside class="doc-status"><strong>Technical documentation</strong><span>This page records architecture and experimental direction. It is not a user-facing tool.</span></aside><div class="doc-content"><h1 id="high-level-design-hld">High-Level Design (HLD)</h1>
+<h2 id="scope">Scope</h2>
+<p>This HLD describes the major Clean Local Tools components, their responsibilities, trust boundaries, and interactions. It intentionally avoids function-level implementation detail.</p>
+<p><strong>Branch status:</strong> this branch contains the experimental local-AI implementation, hardware-recovery refinements, and physical-device evidence. It is not deployed from <code>main</code>.</p>
+<h2 id="primary-components">Primary components</h2>
+<h3 id="1-static-application-shell">1. Static application shell</h3>
+<p>Responsibilities:</p>
+<ul><li>deliver each tool&#39;s HTML/CSS/JavaScript;</li><li>provide navigation, branding, accessibility, responsive layout, SEO metadata, and privacy explanation;</li><li>initiate local processing after explicit user actions.</li></ul>
+<p>There is no general application server required to execute a tool.</p>
+<h3 id="2-tool-modules">2. Tool modules</h3>
+<p>Each public tool owns its workflow and domain-specific processing. Current categories include PDF, image/document, identity-photo, QR, and Japa utilities.</p>
+<p>A tool should own only what is specific to its job. Reusable technical concerns may be promoted into shared foundations when repeated use justifies the abstraction.</p>
+<h3 id="3-browser-processing-layer">3. Browser processing layer</h3>
+<p>This is where ordinary deterministic processing occurs using combinations of:</p>
+<ul><li>JavaScript;</li><li>Canvas;</li><li>browser File/Blob APIs;</li><li>PDF/image libraries;</li><li>WebAssembly where appropriate;</li><li>Web Workers for expensive work that should not block interaction.</li></ul>
+<h3 id="4-local-ai-foundation">4. Local AI foundation</h3>
+<p>The local AI layer provides a stable boundary between product features and AI execution technology.</p>
+<p>Responsibilities:</p>
+<ul><li>detect relevant capabilities;</li><li>probe whether WebGPU is genuinely usable rather than checking API presence only;</li><li>prefer WebGPU when usable;</li><li>apply a model-specific execution policy before choosing a fallback;</li><li>permit CPU/WASM fallback only for model/device combinations that have been explicitly approved;</li><li>stop cleanly with a compatibility result when no reasonable local backend is available;</li><li>keep expensive execution behind a worker boundary where practical;</li><li>expose a tool-facing API that does not require every tool to understand GPU lifecycle details;</li><li>bound initialization so a broken/slow capability does not indefinitely hang a tool;</li><li>never convert an unsupported local path into a hidden remote/cloud inference path.</li></ul>
+<p>Model adapters isolate model/framework-specific code from tool code.</p>
+<p>The high-level decision flow is:</p>
+<pre><code class="language-text">Model requirements + device/browser capabilities
+                  |
+                  v
+          Execution policy
+          /      |       \
+         /       |        \
+     WebGPU   approved    unsupported
+       |      CPU/WASM        |
+       v         |             v
+      run       run      explain and stop</code></pre>
+<p>The policy is intentionally model-specific. A lightweight model may permit a WASM fallback on desktop-class devices, while a heavier model may require WebGPU everywhere. Technical capability and acceptable product experience are separate questions.</p>
+<h3 id="5-third-party-runtime-assets">5. Third-party runtime assets</h3>
+<p>Some tools currently retrieve libraries or models from CDNs.</p>
+<p>These assets are application dependencies, not destinations for user working files. Nevertheless they create network availability, supply-chain, caching, and long-term-maintenance concerns.</p>
+<p>Direction of travel:</p>
+<ul><li>know exactly which external assets a tool needs;</li><li>pin versions where feasible;</li><li>test failure behavior;</li><li>evaluate self-hosting important assets;</li><li>only award an Offline Ready claim after automated offline verification.</li></ul>
+<h3 id="6-service-worker-local-caching">6. Service worker / local caching</h3>
+<p>Some application areas, notably the passport-photo experience, use service-worker/PWA behavior. Service workers may cache application assets but must not silently redefine the privacy or persistence model.</p>
+<p>Future broader offline support should be deliberate and tested.</p>
+<h3 id="7-ci-quality-gates">7. CI quality gates</h3>
+<p>GitHub Actions is the current verification system. The quality pipeline combines inexpensive static/architecture checks with real browser workflows.</p>
+<p>Production changes should not be considered complete merely because code was committed. Required gates must pass.</p>
+<h2 id="data-flow">Data flow</h2>
+<p>Typical file-processing flow:</p>
+<pre><code class="language-text">Browser downloads application assets
+              |
+              v
+User explicitly chooses local file
+              |
+              v
+File object exists in browser
+              |
+              v
+Tool processes locally
+              |
+       optional local AI
+              |
+              v
+Output created as browser Blob/data
+              |
+              v
+User downloads / prints result</code></pre>
+<p>Forbidden for a local-only file tool:</p>
+<pre><code class="language-text">User file -&gt; hidden upload -&gt; remote processing -&gt; result</code></pre>
+<p>If a future feature genuinely needs remote processing, it must be architecturally and visibly separated from the local-only promise.</p>
+<h2 id="failure-model">Failure model</h2>
+<p>The application must expect failure at several boundaries:</p>
+<ul><li>unsupported browser APIs;</li><li>WebGPU unavailable;</li><li>GPU adapter/device initialization failure;</li><li>model execution policy refusing an unsafe/uncertified fallback;</li><li>worker startup or message failure;</li><li>third-party CDN unavailable;</li><li>malformed/encrypted/unsupported input;</li><li>memory pressure from large files/images;</li><li>browser-specific rendering or input behavior;</li><li>user cancellation or navigation.</li></ul>
+<p>“Unsupported on this device/browser” is a valid, deliberate product outcome for advanced local AI. It is preferable to unexpectedly consuming excessive CPU, battery, memory, or thermal budget.</p>
+<p>Failures should not corrupt the original local file. Prefer understandable user-facing errors and recoverable state.</p>
+<h2 id="security-and-privacy-boundaries">Security and privacy boundaries</h2>
+<h3 id="inside-the-device-boundary">Inside the device boundary</h3>
+<ul><li>selected working files;</li><li>decoded image/PDF content;</li><li>intermediate processing buffers;</li><li>local model inputs;</li><li>generated output prior to download.</li></ul>
+<h3 id="network-visible-application-activity">Network-visible application activity</h3>
+<ul><li>page and static asset requests;</li><li>CDN library/model requests where currently used;</li><li>normal DNS/TLS/HTTP metadata associated with loading the application.</li></ul>
+<p>Do not blur these two categories in documentation or marketing.</p>
+<h2 id="non-goals-of-the-current-architecture">Non-goals of the current architecture</h2>
+<p>The system is not currently intended to be:</p>
+<ul><li>a cloud document repository;</li><li>a collaborative editing backend;</li><li>an account/profile platform;</li><li>an ad-tech surface;</li><li>a server-side AI inference service;</li><li>an identity-photo generator that invents or reconstructs facial features.</li></ul>
+<h2 id="evolution-rule">Evolution rule</h2>
+<p>When introducing a new major component, document:</p>
+<ol><li>the problem it solves;</li><li>why the browser/local approach is or is not sufficient;</li><li>the new data flows and trust boundaries;</li><li>failure/fallback behavior;</li><li>browser support;</li><li>compute policy and supported device classes for heavy local features;</li><li>tests proving the important properties;</li><li>operational burden;</li><li>an ADR if the decision is architecturally significant.</li></ol></div><nav class="doc-related" aria-label="Related pages"><a href="/">Home</a><a href="/about/">Mission &amp; vision</a><a href="/principles/">Principles</a></nav></article></div></main>
+<footer><div class="wrap site-footer-row"><span>© 2026 Clean Local Tools · Your files never leave your machine.</span><nav class="site-footer-nav" aria-label="Footer"><a class="toplink" href="/about/">About</a><a class="toplink" href="/principles/">Principles</a></nav></div></footer>
+</body>
+</html>

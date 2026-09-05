@@ -1,8 +1,19 @@
+---
+render: true
+title: Architecture Overview
+description: Technical overview of the browser-local Clean Local Tools architecture.
+route: /docs/architecture/
+index: false
+section: Technical documentation
+---
+
 # Architecture Overview
 
 ## Purpose
 
 This document gives a new human or AI maintainer a fast mental model of Clean Local Tools before they read implementation details.
+
+**Branch status:** this branch contains the experimental local-AI implementation, hardware-recovery refinements, and physical-device evidence. It is not deployed from `main`.
 
 ## System in one picture
 

@@ -1,0 +1,41 @@
+:root{
+  --ink:#202124;
+  --ink-soft:#3c4043;
+  --muted:#5f6368;
+  --blue:#1a73e8;
+  --blue-soft:#f5f8ff;
+  --blue-border:#e8f0fe;
+  --surface:#fff;
+  --surface-alt:#f8f9fa;
+  --border:#dadce0;
+  --border-soft:#f1f3f4;
+  font-family:Arial,Helvetica,sans-serif;
+  color:var(--ink);
+  background:var(--surface);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--surface);color:var(--ink)}
+.wrap{width:min(1040px,calc(100% - 40px));margin:0 auto}
+.topbar{height:64px;border-bottom:1px solid var(--border-soft);display:flex;align-items:center;background:var(--surface)}
+.topbar .wrap{display:flex;align-items:center;justify-content:space-between;gap:24px}
+.brand a{color:var(--ink);text-decoration:none;font-size:18px;font-weight:600;letter-spacing:-.2px}
+.topnav{display:flex;align-items:center;gap:20px}
+.toplink{color:var(--muted);text-decoration:none;font-size:14px}
+.toplink:hover{color:var(--blue)}
+.toplink[aria-current="page"]{color:var(--ink);font-weight:600}
+.eyebrow{display:inline-block;color:var(--blue);font-size:13px;font-weight:700;letter-spacing:.3px;text-transform:uppercase}
+.button{display:inline-flex;align-items:center;justify-content:center;text-decoration:none;background:var(--blue);color:#fff;border-radius:8px;padding:11px 17px;font-size:14px;font-weight:600}
+.button:hover{background:#1765cc}
+.text-link{display:inline-flex;align-items:center;color:var(--blue);font-size:14px;font-weight:600;text-decoration:none}
+.text-link:hover{text-decoration:underline;text-underline-offset:3px}
+footer{border-top:1px solid var(--border-soft);padding:22px 0;color:var(--muted);font-size:13px;background:var(--surface)}
+.site-footer-row{display:flex;align-items:center;justify-content:space-between;gap:18px}
+.site-footer-nav{display:flex;gap:16px}
+@media(max-width:600px){
+  .wrap{width:min(100% - 28px,1040px)}
+  .topbar{height:56px}
+  .topnav{gap:12px}
+  .toplink{font-size:13px}
+  .site-footer-row{align-items:flex-start;flex-direction:column}
+}

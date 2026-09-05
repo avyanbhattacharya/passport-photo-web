@@ -1,8 +1,19 @@
+---
+render: true
+title: High-Level Design
+description: High-level component, trust-boundary, and data-flow design for Clean Local Tools.
+route: /docs/architecture/hld/
+index: false
+section: Technical documentation
+---
+
 # High-Level Design (HLD)
 
 ## Scope
 
 This HLD describes the major Clean Local Tools components, their responsibilities, trust boundaries, and interactions. It intentionally avoids function-level implementation detail.
+
+**Branch status:** this branch contains the experimental local-AI implementation, hardware-recovery refinements, and physical-device evidence. It is not deployed from `main`.
 
 ## Primary components
 
