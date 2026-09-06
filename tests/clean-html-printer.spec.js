@@ -1,9 +1,37 @@
 const { test, expect } = require('@playwright/test');
+
+test('live URL imports permitted HTML and blocked requests preserve the document', async ({ page }) => {
+  await page.route('https://example.com/article', route => route.fulfill({ contentType: 'text/html', headers: { 'access-control-allow-origin': '*' }, body: '<h1>Live article</h1><script>parent.hacked=true</script>' }));
+  await page.goto('/clean-html-printer/');
+  await page.locator('#urlOption summary').click();
+  await page.locator('#pageUrl').fill('https://example.com/article'); await page.locator('#openUrl').click();
+  await expect(page.frameLocator('#preview').locator('h1')).toHaveText('Live article');
+  await expect(page.frameLocator('#preview').locator('script')).toHaveCount(0);
+  await page.route('https://example.com/blocked', route => route.abort());
+  await page.locator('#pageUrl').fill('https://example.com/blocked'); await page.locator('#openUrl').click();
+  await expect(page.locator('#error')).toContainText('CORS');
+  await expect(page.frameLocator('#preview').locator('h1')).toHaveText('Live article');
+});
+
+test('new paste cancels a pending URL load and cannot be overwritten by it', async ({ page }) => {
+  let pending;
+  await page.route('https://example.com/slow', route => { pending = route; });
+  await page.goto('/clean-html-printer/');
+  await page.locator('#urlOption summary').click();
+  await page.locator('#pageUrl').fill('https://example.com/slow'); await page.locator('#openUrl').click();
+  await expect(page.locator('#cancelUrl')).toBeVisible();
+  await expect.poll(() => Boolean(pending)).toBeTruthy();
+  await page.locator('summary').filter({ hasText: 'Or paste HTML' }).click();
+  await page.locator('#source').fill('<p>New local content</p>'); await page.locator('#openPaste').click();
+  await pending.fulfill({ contentType: 'text/html', body: '<p>Stale URL content</p>' }).catch(() => {});
+  await expect(page.frameLocator('#preview').locator('p')).toHaveText('New local content');
+  await expect(page.locator('#cancelUrl')).toBeHidden();
+});
 const pixel = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=';
 const sample = `<article><h1>My article</h1><section><p>Unwanted promotion</p><img src="${pixel}" alt="Promotion"></section><p>Keep this paragraph</p><p>Last paragraph</p></article>`;
 async function open(page, html = sample) {
   await page.goto('/clean-html-printer/');
-  await page.locator('summary').click();
+  await page.locator('summary').filter({ hasText: 'Or paste HTML' }).click();
   await page.locator('#source').fill(html);
   await page.locator('#openPaste').click();
   await expect(page.locator('#print')).toBeEnabled();

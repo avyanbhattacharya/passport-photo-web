@@ -5,6 +5,13 @@
   const allowed = new Set('article section main header footer nav aside div p span h1 h2 h3 h4 h5 h6 strong em b i u s small sub sup blockquote pre code ul ol li dl dt dd table caption thead tbody tfoot tr th td figure figcaption br hr img'.split(' '));
   const dropped = new Set('script style link meta base title iframe frame frameset object embed svg math template noscript form input button textarea select option video audio source track canvas head'.split(' '));
   let history = [], cursor = 0, original = '', selected = null, ready = false, generation = 0;
+  let urlRequest = null;
+  function beginImport() {
+    ++generation;
+    if (urlRequest) urlRequest.abort();
+    urlRequest = null; $('openUrl').disabled = false; $('cancelUrl').hidden = true; $('urlStatus').textContent = '';
+    return generation;
+  }
   const frame = $('preview');
   // Parse only in an inert template. Never attach imported nodes or attributes.
   // WebKit requires sandbox allow-scripts for parent-installed event callbacks.
@@ -91,7 +98,8 @@
     $('error').textContent = ''; $('status').textContent = 'Clean reading layout ready. Select content to begin.'; render();
   }
   $('htmlFile').addEventListener('change', async event => {
-    const token = ++generation, file = event.target.files[0]; if (!file) return;
+    const file = event.target.files[0]; if (!file) return;
+    const token = beginImport();
     try {
       if (!/\.html?$/i.test(file.name) && file.type !== 'text/html') throw new Error('Please choose an HTML (.html or .htm) file.');
       if (file.size > limit) throw new Error('Choose HTML smaller than 2 MB.');
@@ -99,7 +107,27 @@
     } catch (error) { if (token === generation) $('error').textContent = error.message; }
     event.target.value = '';
   });
-  $('openPaste').onclick = () => { ++generation; try { open($('source').value, 'Pasted HTML'); } catch (error) { $('error').textContent = error.message; } };
+  $('openPaste').onclick = () => { beginImport(); try { open($('source').value, 'Pasted HTML'); } catch (error) { $('error').textContent = error.message; } };
+  $('cancelUrl').onclick = () => { beginImport(); $('urlStatus').textContent = 'Loading cancelled. Your existing document is unchanged.'; };
+  $('urlForm').onsubmit = async event => {
+    event.preventDefault();
+    const token = beginImport(), controller = new AbortController();
+    urlRequest = controller; $('openUrl').disabled = true; $('cancelUrl').hidden = false;
+    $('error').textContent = ''; $('urlStatus').textContent = 'Contacting website…';
+    const timer = setTimeout(() => controller.abort(), 15000);
+    try {
+      const result = await HTMLURLLoader.load($('pageUrl').value, { signal: controller.signal });
+      if (token !== generation) return;
+      open(result.html, result.label); $('urlStatus').textContent = 'Page loaded. Editing stays local.';
+    } catch (error) {
+      if (token !== generation) return;
+      $('urlStatus').textContent = '';
+      $('error').textContent = controller.signal.aborted ? 'The website took too long. Save the page as HTML or paste its HTML instead.' : error instanceof TypeError ? 'The browser could not read this website. It may block cross-site access (CORS), redirect, require login, or be unavailable. Save the page as HTML or paste its HTML instead.' : error.message;
+    } finally {
+      clearTimeout(timer);
+      if (token === generation) { urlRequest = null; $('openUrl').disabled = false; $('cancelUrl').hidden = true; }
+    }
+  };
   $('remove').onclick = () => { const target = selected; if (target) edit(() => target.remove()); };
   $('parent').onclick = () => { if (selected && selected.parentElement !== frame.contentDocument.body) select(selected.parentElement); };
   $('images').onclick = () => edit(() => frame.contentDocument.querySelectorAll('img').forEach(img => img.remove()));

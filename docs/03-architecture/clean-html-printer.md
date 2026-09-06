@@ -12,6 +12,10 @@ The output lives in an iframe sandboxed with `allow-same-origin allow-scripts al
 
 ## State, limits and printing
 
+## Live URL import (2026-09-06)
+
+URL import is an explicit opt-in network operation, not a file upload. The target sees the user's IP address and URL; the UI states this before submission. Fetch uses CORS, omitted credentials, no referrer, no cache and redirect rejection; there is no proxy or server fetcher. Only HTTP(S) URLs without credentials and HTML responses qualify. A streamed 2 MiB cap prevents an unbounded response from being accumulated. An AbortController applies a 15-second deadline and cancellation; newer URL/file/paste imports supersede older requests. Failures preserve the open document and explain file/paste alternatives. Browser security policies, redirects, login requirements and sites without CORS support can prevent loading. Client-rendered content is not executed. UTF-8 decoding is used; legacy encodings may need local conversion. Imported HTML follows the same reconstruction and CSP path as files.
+
 Input is capped at 2 MiB, 15,000 traversed nodes and depth 100; parsing remains on the main thread, so exceptionally pathological input can still pause briefly. There are at most 20 sanitized history snapshots, plus the original for reset. New edits discard redo history. Failed imports preserve the existing document. A generation token avoids an earlier asynchronous file read replacing a later import.
 
 Selection and keyboard focus attributes are editor-only and stripped from snapshots. Print CSS hides outlines and selection background; the print action clears selection and prints only the iframe. Paper size, orientation, margins and font size use fixed select options. Browser print settings may override CSS; users should check print preview and disable browser headers/footers as desired. Empty documents are rejected at import and cannot be printed after deleting all content.
