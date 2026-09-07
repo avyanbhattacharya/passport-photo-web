@@ -12,7 +12,7 @@
     "test:static:hygiene": "node --test --test-name-pattern=\"browser tests|dedicated deep|CI keeps\" tests/static/site.test.js",
     "test:chromium": "playwright test --project=chromium",
     "test:chromium:core": "playwright test --project=chromium tests/homepage.spec.js tests/passport-photo.spec.js tests/japa-touchless.spec.js tests/japa-tap.spec.js",
-    "test:chromium:pdf": "playwright test --project=chromium tests/compress-pdf.spec.js tests/merge-pdf.spec.js tests/clean-pdf-printer.spec.js tests/image-to-pdf.spec.js tests/split-pdf.spec.js",
+    "test:chromium:pdf": "playwright test --project=chromium tests/compress-pdf.spec.js tests/merge-pdf.spec.js tests/clean-pdf-printer.spec.js tests/clean-html-printer.spec.js tests/image-to-pdf.spec.js tests/split-pdf.spec.js",
     "test:chromium:image": "playwright test --project=chromium tests/resize-image.spec.js tests/document-flattener.spec.js tests/heic-to-jpg.spec.js tests/remove-photo-metadata.spec.js tests/qr-code-maker.spec.js tests/all-tools-regression.spec.js",
     "test:compat": "playwright test --project=webkit --project=mobile-webkit",
     "test:compat:webkit": "playwright test --project=webkit",
