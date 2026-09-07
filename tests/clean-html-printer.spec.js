@@ -13,6 +13,24 @@ test('live URL imports permitted HTML and blocked requests preserve the document
   await expect(page.frameLocator('#preview').locator('h1')).toHaveText('Live article');
 });
 
+test('URL guidance stays readable and a saved file recovers a blocked import', async ({ page }) => {
+  await page.goto('/clean-html-printer/');
+  await page.locator('#urlOption summary').click();
+  await expect(page.locator('#urlHelp')).toBeVisible();
+  await expect(page.locator('#urlHelp')).toContainText('HTML Only');
+  await expect(page.locator('#urlHelp')).toContainText('⌘S');
+  await expect(page.locator('#urlHelp')).toContainText('Ctrl+S');
+  await page.route('https://example.com/blocked', route => route.abort());
+  await page.locator('#pageUrl').fill('https://example.com/blocked');
+  await page.locator('#openUrl').click();
+  await expect(page.locator('#error')).toContainText('CORS');
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBeTruthy();
+  await page.locator('#htmlFile').setInputFiles({ name: 'saved-page.html', mimeType: 'text/html', buffer: Buffer.from('<h1>Saved article</h1>') });
+  await expect(page.frameLocator('#preview').locator('h1')).toHaveText('Saved article');
+  await expect(page.locator('#error')).toBeEmpty();
+  await expect(page.locator('#print')).toBeEnabled();
+});
+
 test('new paste cancels a pending URL load and cannot be overwritten by it', async ({ page }) => {
   let pending;
   await page.route('https://example.com/slow', route => { pending = route; });
