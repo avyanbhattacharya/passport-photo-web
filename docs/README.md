@@ -28,8 +28,9 @@ The intended product direction is private, local-first software that runs primar
 3. [Architecture Overview](03-architecture/architecture-overview.md)
 4. [High-Level Design](03-architecture/hld.md)
 5. [Low-Level Design](03-architecture/lld.md)
-6. [Experimental Local AI Models](03-architecture/local-ai-models.md)
-7. [Human, Codex and Jules Workflow](04-workflow/agent-collaboration.md)
+6. [Photo to Scan Architecture](03-architecture/photo-to-scan.md)
+7. [Experimental Local AI Models](03-architecture/local-ai-models.md)
+8. [Human, Codex and Jules Workflow](04-workflow/agent-collaboration.md)
 
 Coding agents should also read the root `AGENTS.md`. Approved app specifications use `docs/04-workflow/jules-task-brief.md` as their issue template.
 

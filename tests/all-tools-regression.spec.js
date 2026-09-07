@@ -11,6 +11,7 @@ const tools = [
   ['/resize-image/', /Resize & Compress Image/i],
   ['/clean-pdf-printer/', /Clean PDF Printer/i],
   ['/document-flattener/', /Document Flattener/i],
+  ['/photo-to-scan/', /Photo to Scan/i],
   ['/image-to-pdf/', /Image to PDF/i],
   ['/split-pdf/', /Split PDF/i],
   ['/heic-to-jpg/', /HEIC to JPG/i],

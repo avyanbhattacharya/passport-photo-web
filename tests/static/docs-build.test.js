@@ -35,7 +35,7 @@ test('brand documents split their H1, preamble, and H2 sections deterministicall
 
 test('generated documentation is current and keeps public pages separate from technical pages',()=>{
   const result=docs.checkBuild(root);
-  assert.equal(result.pages.length,8);
+  assert.equal(result.pages.length,9);
   const byRoute=new Map(result.pages.map(page=>[page.meta.route,page]));
   assert.equal(byRoute.get('/about/').meta.index,true);
   assert.equal(byRoute.get('/principles/').meta.index,true);
@@ -43,7 +43,7 @@ test('generated documentation is current and keeps public pages separate from te
   assert.equal(byRoute.get('/about/').meta.variant,'mission');
   assert.equal(byRoute.get('/principles/').meta.layout,'brand');
   assert.equal(byRoute.get('/principles/').meta.variant,'principles');
-  for(const route of ['/docs/','/docs/architecture/','/docs/architecture/hld/','/docs/architecture/lld/','/docs/architecture/local-ai-models/','/docs/workflow/agent-collaboration/']){
+  for(const route of ['/docs/','/docs/architecture/','/docs/architecture/hld/','/docs/architecture/lld/','/docs/architecture/photo-to-scan/','/docs/architecture/local-ai-models/','/docs/workflow/agent-collaboration/']){
     assert.equal(byRoute.get(route).meta.index,false,route+' should remain technical/noindex');
   }
 });
