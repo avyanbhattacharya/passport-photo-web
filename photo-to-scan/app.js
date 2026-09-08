@@ -26,11 +26,13 @@
 
   let activeImg = null;
   let fullCanvas = document.createElement('canvas');
+  let cachedSourceImageData = null; // Performance caching for full-resolution ImageData
   let pts = []; // Normalized corner coordinates [[x0,y0], [x1,y1], [x2,y2], [x3,y3]]
   let activeMode = 'original';
   let dragIndex = -1;
   let renderRequestId = 0;
   let currentObjectUrl = null;
+  let renderDebounceTimer = null;
 
   chooseImageBtn.addEventListener('click', () => {
     fileInput.value = '';
@@ -111,6 +113,9 @@
       const fctx = fullCanvas.getContext('2d');
       fctx.drawImage(img, 0, 0, width, height);
 
+      // Cache the source ImageData once on import
+      cachedSourceImageData = fctx.getImageData(0, 0, width, height);
+
       // Fit preview source canvas into display space
       const maxAvailableWidth = Math.max(260, Math.min(720, document.documentElement.clientWidth - 32));
       const scale = Math.min(1, maxAvailableWidth / width);
@@ -164,8 +169,16 @@
     const offsetY = canvasRect.top - boxRect.top;
 
     cornerEls.forEach((el, i) => {
-      el.style.left = `${offsetX + pts[i][0] * w}px`;
-      el.style.top = `${offsetY + pts[i][1] * h}px`;
+      const px = pts[i][0];
+      const py = pts[i][1];
+      el.style.left = `${offsetX + px * w}px`;
+      el.style.top = `${offsetY + py * h}px`;
+
+      // Update ARIA slider values for accessibility (CLT-PTS-005)
+      const pctX = Math.round(px * 100);
+      const pctY = Math.round(py * 100);
+      el.setAttribute('aria-valuenow', pctX);
+      el.setAttribute('aria-valuetext', `${pctX}% X, ${pctY}% Y`);
     });
   }
 
@@ -251,13 +264,22 @@
     return [...h, 1];
   }
 
-  function scheduleRender() {
+  function scheduleRender(debounceMs = 0) {
     const requestId = ++renderRequestId;
-    requestAnimationFrame(() => renderResult(requestId));
+    if (renderDebounceTimer) clearTimeout(renderDebounceTimer);
+
+    if (debounceMs > 0) {
+      renderDebounceTimer = setTimeout(() => {
+        requestAnimationFrame(() => renderResult(requestId));
+      }, debounceMs);
+    } else {
+      requestAnimationFrame(() => renderResult(requestId));
+    }
   }
 
   function renderResult(requestId) {
-    if (requestId !== renderRequestId || !activeImg) return;
+    // CLT-PTS-004: Ensure superseded render requests do not proceed or overwrite canvas
+    if (requestId !== renderRequestId || !activeImg || !cachedSourceImageData) return;
 
     editorError.textContent = '';
     const quadCheck = validateQuad(pts);
@@ -307,11 +329,8 @@
       return;
     }
 
-    const fctx = fullCanvas.getContext('2d');
-    const sourceData = fctx.getImageData(0, 0, iw, ih);
+    const sData = cachedSourceImageData.data;
     const outputData = new ImageData(W, H);
-
-    const sData = sourceData.data;
     const oData = outputData.data;
 
     const brightness = parseInt(brightnessInput.value, 10) || 0;
@@ -321,7 +340,9 @@
     const contrastFactor = (259 * (contrast + 255)) / (255 * (259 - contrast));
     const bOffset = brightness * 2.55;
 
+    // CLT-PTS-001: Bilinear Interpolation for smooth resampling
     for (let y = 0; y < H; y++) {
+      if (requestId !== renderRequestId) return; // Superseded check during loop
       for (let x = 0; x < W; x++) {
         const denom = M[6] * x + M[7] * y + M[8];
         if (Math.abs(denom) < 1e-12) continue;
@@ -329,15 +350,31 @@
         const sx = (M[0] * x + M[1] * y + M[2]) / denom;
         const sy = (M[3] * x + M[4] * y + M[5]) / denom;
 
-        const ix = Math.max(0, Math.min(iw - 1, Math.round(sx)));
-        const iy = Math.max(0, Math.min(ih - 1, Math.round(sy)));
+        // Clamped continuous floating point coordinates
+        const csx = Math.max(0, Math.min(iw - 1, sx));
+        const csy = Math.max(0, Math.min(ih - 1, sy));
 
-        const si = (iy * iw + ix) * 4;
-        const oi = (y * W + x) * 4;
+        const x0 = Math.floor(csx);
+        const y0 = Math.floor(csy);
+        const x1 = Math.min(iw - 1, x0 + 1);
+        const y1 = Math.min(ih - 1, y0 + 1);
 
-        let r = sData[si];
-        let g = sData[si + 1];
-        let b = sData[si + 2];
+        const dx = csx - x0;
+        const dy = csy - y0;
+
+        const w00 = (1 - dx) * (1 - dy);
+        const w10 = dx * (1 - dy);
+        const w01 = (1 - dx) * dy;
+        const w11 = dx * dy;
+
+        const idx00 = (y0 * iw + x0) * 4;
+        const idx10 = (y0 * iw + x1) * 4;
+        const idx01 = (y1 * iw + x0) * 4;
+        const idx11 = (y1 * iw + x1) * 4;
+
+        let r = w00 * sData[idx00] + w10 * sData[idx10] + w01 * sData[idx01] + w11 * sData[idx11];
+        let g = w00 * sData[idx00 + 1] + w10 * sData[idx10 + 1] + w01 * sData[idx01 + 1] + w11 * sData[idx11 + 1];
+        let b = w00 * sData[idx00 + 2] + w10 * sData[idx10 + 2] + w01 * sData[idx01 + 2] + w11 * sData[idx11 + 2];
 
         // Apply document mode
         if (activeMode === 'grayscale') {
@@ -362,6 +399,7 @@
           b = contrastFactor * (b - 128) + 128;
         }
 
+        const oi = (y * W + x) * 4;
         oData[oi] = Math.max(0, Math.min(255, Math.round(r)));
         oData[oi + 1] = Math.max(0, Math.min(255, Math.round(g)));
         oData[oi + 2] = Math.max(0, Math.min(255, Math.round(b)));
@@ -369,8 +407,10 @@
       }
     }
 
-    resultCanvas.getContext('2d').putImageData(outputData, 0, 0);
-    statusEl.textContent = `Output scan size: ${W} × ${H} px`;
+    if (requestId === renderRequestId) {
+      resultCanvas.getContext('2d').putImageData(outputData, 0, 0);
+      statusEl.textContent = `Output scan size: ${W} × ${H} px`;
+    }
   }
 
   // Pointer & Drag Interaction
@@ -382,7 +422,7 @@
       dragIndex = idx;
       el.classList.add('active');
       el.focus();
-      if (el.setPointerCapture) el.setPointerCapture(e.pointerId);
+      try { if (el.setPointerCapture) el.setPointerCapture(e.pointerId); } catch {}
     });
 
     el.addEventListener('pointermove', e => {
@@ -469,14 +509,15 @@
     });
   });
 
+  // Debounced adjustments for sliders to remain responsive
   brightnessInput.addEventListener('input', () => {
     brightnessVal.textContent = brightnessInput.value;
-    scheduleRender();
+    scheduleRender(30);
   });
 
   contrastInput.addEventListener('input', () => {
     contrastVal.textContent = contrastInput.value;
-    scheduleRender();
+    scheduleRender(30);
   });
 
   resetBtn.addEventListener('click', () => {
