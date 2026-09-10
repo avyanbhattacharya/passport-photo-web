@@ -33,6 +33,7 @@
   let renderRequestId = 0;
   let currentObjectUrl = null;
   let renderDebounceTimer = null;
+  window.__photoToScanDebug = { sourceImageDataReads: 0, scheduled: 0, completed: 0, superseded: 0 };
 
   chooseImageBtn.addEventListener('click', () => {
     fileInput.value = '';
@@ -115,6 +116,7 @@
 
       // Cache the source ImageData once on import
       cachedSourceImageData = fctx.getImageData(0, 0, width, height);
+      window.__photoToScanDebug.sourceImageDataReads++;
 
       // Fit preview source canvas into display space
       const maxAvailableWidth = Math.max(260, Math.min(720, document.documentElement.clientWidth - 32));
@@ -266,6 +268,7 @@
 
   function scheduleRender(debounceMs = 0) {
     const requestId = ++renderRequestId;
+    window.__photoToScanDebug.scheduled++;
     if (renderDebounceTimer) clearTimeout(renderDebounceTimer);
 
     if (debounceMs > 0) {
@@ -279,7 +282,7 @@
 
   function renderResult(requestId) {
     // CLT-PTS-004: Ensure superseded render requests do not proceed or overwrite canvas
-    if (requestId !== renderRequestId || !activeImg || !cachedSourceImageData) return;
+    if (requestId !== renderRequestId || !activeImg || !cachedSourceImageData) { window.__photoToScanDebug.superseded++; return; }
 
     editorError.textContent = '';
     const quadCheck = validateQuad(pts);
@@ -342,7 +345,7 @@
 
     // CLT-PTS-001: Bilinear Interpolation for smooth resampling
     for (let y = 0; y < H; y++) {
-      if (requestId !== renderRequestId) return; // Superseded check during loop
+      if (requestId !== renderRequestId) { window.__photoToScanDebug.superseded++; return; } // Superseded check during loop
       for (let x = 0; x < W; x++) {
         const denom = M[6] * x + M[7] * y + M[8];
         if (Math.abs(denom) < 1e-12) continue;
@@ -410,6 +413,7 @@
     if (requestId === renderRequestId) {
       resultCanvas.getContext('2d').putImageData(outputData, 0, 0);
       statusEl.textContent = `Output scan size: ${W} × ${H} px`;
+      window.__photoToScanDebug.completed++;
     }
   }
 
