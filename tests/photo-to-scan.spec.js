@@ -248,8 +248,8 @@ test('Decodes downloaded JPEG and asserts dimensions; inspects downloaded PDF wi
     });
   }, jpgBuffer.toString('base64'));
 
-  expect(decodedJpgInfo.width).toBeGreaterThan(0);
-  expect(decodedJpgInfo.height).toBeGreaterThan(0);
+  const resultDimensions = await page.locator('#resultCanvas').evaluate(c => ({ width: c.width, height: c.height }));
+  expect(decodedJpgInfo).toEqual(resultDimensions);
 
   // Test PDF download
   const [pdfDownload] = await Promise.all([
@@ -276,6 +276,11 @@ test('Decodes downloaded JPEG and asserts dimensions; inspects downloaded PDF wi
   // Landscape A4 dimensions in points: 842 x 595
   expect(pdfInfo.width).toBe(842);
   expect(pdfInfo.height).toBe(595);
+  expect(pdfBuffer.includes(Buffer.from('/Subtype /Image'))).toBe(true);
+  const expectedFit = Math.min((pdfInfo.width - 40) / decodedJpgInfo.width, (pdfInfo.height - 40) / decodedJpgInfo.height);
+  expect(expectedFit).toBeGreaterThan(0);
+  expect(decodedJpgInfo.width * expectedFit).toBeLessThanOrEqual(pdfInfo.width - 40 + 0.01);
+  expect(decodedJpgInfo.height * expectedFit).toBeLessThanOrEqual(pdfInfo.height - 40 + 0.01);
 });
 
 test('Fast slider changes debounce render and request-id prevents stale renders (CLT-PTS-004)', async ({ page }) => {
@@ -284,6 +289,7 @@ test('Fast slider changes debounce render and request-id prevents stale renders 
   await page.locator('#fileInput').setInputFiles(file);
   await expect(page.locator('#editor')).toBeVisible();
 
+  const before = await page.evaluate(() => ({ ...window.__photoToScanDebug }));
   // Rapidly change brightness slider multiple times
   await page.locator('#brightness').fill('10');
   await page.locator('#brightness').fill('20');
@@ -292,6 +298,11 @@ test('Fast slider changes debounce render and request-id prevents stale renders 
 
   await expect(page.locator('#brightnessVal')).toHaveText('40');
   await expect(page.locator('#status')).toContainText('Output scan size');
+  await expect.poll(() => page.evaluate(() => window.__photoToScanDebug.completed), { timeout: 1000 }).toBeGreaterThan(before.completed);
+  const after = await page.evaluate(() => ({ ...window.__photoToScanDebug }));
+  expect(after.sourceImageDataReads).toBe(before.sourceImageDataReads);
+  expect(after.completed - before.completed).toBe(1);
+  expect(after.scheduled - before.scheduled).toBe(4);
 });
 
 test('Photo to scan editor has no horizontal page overflow on mobile viewports', async ({ page }) => {
