@@ -13,6 +13,7 @@ const tools = [
   ['/document-flattener/', /Document Flattener/i],
   ['/image-to-pdf/', /Image to PDF/i],
   ['/split-pdf/', /Split PDF/i],
+  ['/batch-image-converter/', /Batch Image Converter/i],
   ['/heic-to-jpg/', /HEIC to JPG/i],
   ['/remove-photo-metadata/', /Remove Photo Metadata/i],
   ['/qr-code-maker/', /QR Code Maker/i],
