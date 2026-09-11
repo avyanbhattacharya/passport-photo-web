@@ -29,7 +29,7 @@ There is no general application server required to execute a tool.
 
 ### 2. Tool modules
 
-Each public tool owns its workflow and domain-specific processing. Current categories include PDF, image/document, identity-photo, QR, and Japa utilities.
+Each public tool owns its workflow and domain-specific processing. Current categories include PDF (compression, merging, splitting, page organization, and printing), image/document, identity-photo, QR, and Japa utilities.
 
 A tool should own only what is specific to its job. Reusable technical concerns may be promoted into shared foundations when repeated use justifies the abstraction.
 
