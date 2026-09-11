@@ -166,3 +166,26 @@ test('Photo Sheet supports item removal, caption editing, and zero-item state', 
   // Editor should hide when 0 items remain
   await expect(page.locator('#editor')).toBeHidden();
 });
+
+
+test('Photo Sheet blocks export instead of silently dropping photos beyond the selected grid capacity', async ({ page }) => {
+  await page.goto('/photo-sheet/');
+
+  await page.locator('#imageFiles').setInputFiles([
+    { name: 'first.png', mimeType: 'image/png', buffer: png },
+    { name: 'second.png', mimeType: 'image/png', buffer: png }
+  ]);
+  await page.locator('#gridSelect').selectOption('1');
+
+  await expect(page.locator('#error')).toContainText('This layout holds up to 1 photo');
+  await expect(page.locator('#makePdf')).toBeDisabled();
+  await expect(page.locator('#result')).toBeHidden();
+
+  await page.locator('#gridSelect').selectOption('4');
+  await expect(page.locator('#makePdf')).toBeEnabled();
+  await expect(page.locator('#error')).toHaveText('');
+
+  await page.locator('#makePdf').click();
+  await expect(page.locator('#result')).toBeVisible({ timeout: 10000 });
+  await expect(page.locator('#resultText')).toContainText('2 photos');
+});
