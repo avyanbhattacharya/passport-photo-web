@@ -28,11 +28,6 @@ test.beforeEach(async ({ page }) => {
       ctx.fillRect(0, 0, 400, 300);
       return new Promise(resolve => canvas.toBlob(resolve, toType || 'image/png'));
     };
-    window.JSZip = class JSZip {
-      constructor() { this.files = {}; }
-      file(name, content) { this.files[name] = content; }
-      async generateAsync() { return new Blob(['fake-zip'], { type: 'application/zip' }); }
-    };
   });
 });
 
@@ -112,10 +107,9 @@ test('batch image converter converts mixed formats, decodes output and enforces 
   expect(p4.height).toBe(150);
   expect(p4.type).toBe('image/webp');
 
-  // Download links enablement
-  await expect(page.locator('#downloadAllBox')).toBeVisible();
-  await expect(page.locator('#downloadZipBtn')).toBeEnabled();
+  // Each converted item has its own download link; v1 does not create archives.
   await expect(page.locator('.item-actions a.button.primary')).toHaveCount(4);
+  await expect(page.locator('#downloadAllBox')).toHaveCount(0);
 });
 
 test('per-item failure isolation and retry functionality', async ({ page }) => {
@@ -134,9 +128,6 @@ test('per-item failure isolation and retry functionality', async ({ page }) => {
 
   await expect(page.locator('.item-row.converted')).toHaveCount(1);
   await expect(page.locator('.item-row.failed')).toHaveCount(1);
-
-  // Download all ZIP available for converted item
-  await expect(page.locator('#downloadAllBox')).toBeVisible();
 
   // Retry button available on corrupt item
   const retryBtn = page.locator('.item-row.failed .button:has-text("Retry")');
@@ -246,24 +237,6 @@ test('mobile viewport layout has no horizontal overflow', async ({ page }) => {
   expect(overflow).toBeLessThanOrEqual(1);
 });
 
-test('Download all (.zip) button triggers zip download', async ({ page }) => {
-  await page.goto('/batch-image-converter/');
-
-  const png = Buffer.from(await createTestImageBuffer(page, 100, 100));
-  await page.locator('#imageFiles').setInputFiles([
-    { name: 'img1.png', mimeType: 'image/png', buffer: png },
-    { name: 'img2.png', mimeType: 'image/png', buffer: png }
-  ]);
-
-  await page.locator('#convertBatchBtn').click();
-  await expect(page.locator('#batchStatus')).toContainText('finished');
-
-  await expect(page.locator('#downloadAllBox')).toBeVisible();
-  const downloadPromise = page.waitForEvent('download');
-  await page.locator('#downloadZipBtn').click();
-  const download = await downloadPromise;
-  expect(download.suggestedFilename()).toBe('converted-images.zip');
-});
 
 test('keyboard accessibility for batch actions', async ({ page }) => {
   await page.goto('/batch-image-converter/');
@@ -286,4 +259,12 @@ test('keyboard accessibility for batch actions', async ({ page }) => {
 
   await expect(page.locator('#batchStatus')).toContainText('finished');
   await expect(page.locator('.item-row.converted')).toHaveCount(1);
+});
+
+
+test('Batch Image Converter has no ZIP dependency or archive-download UI', async ({ page }) => {
+  await page.goto('/batch-image-converter/');
+  const source = await page.evaluate(() => fetch('/batch-image-converter/app.js').then((response) => response.text()));
+  expect(source).not.toContain('JSZip');
+  await expect(page.locator('#downloadAllBox')).toHaveCount(0);
 });
