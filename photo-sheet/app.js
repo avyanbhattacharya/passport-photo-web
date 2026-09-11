@@ -59,6 +59,16 @@
     return { cols: 2, rows: 2 };
   }
 
+  function getCapacity() {
+    const { cols, rows } = getGridColsRows();
+    return cols * rows;
+  }
+
+  function capacityErrorMessage() {
+    const capacity = getCapacity();
+    return `This layout holds up to ${capacity} photo${capacity === 1 ? '' : 's'} on one page. Remove photos or choose a larger grid before creating the PDF.`;
+  }
+
   function readImage(file) {
     return new Promise((resolve, reject) => {
       if (file.size > MAX_FILE_SIZE) {
@@ -315,7 +325,13 @@
 
   function renderUI() {
     editor.hidden = items.length === 0;
-    makePdf.disabled = items.length === 0;
+    const hasTooManyPhotos = items.length > getCapacity();
+    makePdf.disabled = items.length === 0 || hasTooManyPhotos;
+    if (hasTooManyPhotos) {
+      showError(capacityErrorMessage());
+    } else if (error.textContent.startsWith('This layout holds up to ')) {
+      clearError();
+    }
     renderList();
     renderPreview();
   }
@@ -354,6 +370,11 @@
 
   async function createPdf() {
     if (!items.length) return;
+    if (items.length > getCapacity()) {
+      showError(capacityErrorMessage());
+      makePdf.disabled = true;
+      return;
+    }
     if (!window.PDFLib) {
       showError('The PDF library could not be loaded. Check your connection and try again.');
       return;
@@ -376,7 +397,7 @@
 
       const { cols, rows } = getGridColsRows();
       const capacity = cols * rows;
-      const totalPhotos = Math.min(items.length, capacity);
+      const totalPhotos = items.length;
 
       const availW = pageDim.width - 2 * marginPt - (cols - 1) * gapPt;
       const availH = pageDim.height - 2 * marginPt - (rows - 1) * gapPt;
@@ -473,7 +494,7 @@
       status.textContent = '';
       showError('The PDF could not be created. Try smaller photos or fewer files.');
     } finally {
-      makePdf.disabled = false;
+      makePdf.disabled = items.length === 0 || items.length > getCapacity();
       addMore.disabled = false;
     }
   }
@@ -485,6 +506,6 @@
   makePdf.addEventListener('click', createPdf);
 
   [gridSelect, pageSize, orientation, fitMode, margin, gap, showCaptions].forEach(ctrl => {
-    ctrl.addEventListener('change', renderPreview);
+    ctrl.addEventListener('change', renderUI);
   });
 })();
