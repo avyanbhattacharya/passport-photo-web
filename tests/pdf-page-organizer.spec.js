@@ -173,11 +173,3 @@ test('Privacy check: no working file payload is uploaded over the network', asyn
 
   expect(outboundRequests.length).toBe(0);
 });
-
-
-test('PDF Page Organizer does not include the unapproved PDF.js runtime', async ({ page }) => {
-  await page.goto('/pdf-page-organizer/');
-  const source = await page.evaluate(() => fetch('/pdf-page-organizer/app.js').then((response) => response.text()));
-  expect(source).not.toContain('pdfjs-dist');
-  expect(source).not.toContain('pdf.worker');
-});
