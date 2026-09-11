@@ -63,10 +63,6 @@ body{margin:0;overflow-x:hidden}
 .status-skipped{background:#fef7e0;color:#b06000}
 .item-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
 .item-actions .button{padding:7px 12px;font-size:13px}
-.download-all-box{margin-top:20px;padding:18px;background:#f5f8ff;border:1px solid #e8f0fe;border-radius:12px;display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}
-.download-all-box div{min-width:0}
-.download-all-title{font-size:16px;font-weight:600;color:#202124}
-.download-all-desc{font-size:13px;color:#5f6368;margin-top:2px}
 .status{margin-top:12px;color:#5f6368;font-size:14px}
 .error{margin-top:12px;color:#a50e0e;overflow-wrap:anywhere}
 .info{color:#5f6368;line-height:1.65;font-size:15px}
@@ -83,8 +79,6 @@ footer{background:#fff;border-top:1px solid #f1f3f4;padding:24px 0;color:#5f6368
   .batch-bar{flex-direction:column;align-items:stretch}
   .batch-actions{width:100%}
   .batch-actions .button{flex:1 1 100%}
-  .download-all-box{flex-direction:column;align-items:stretch}
-  .download-all-box .button{width:100%}
 }
 </style>
 </head>
@@ -99,7 +93,7 @@ footer{background:#fff;border-top:1px solid #f1f3f4;padding:24px 0;color:#5f6368
   <section class="hero">
     <div class="wrap">
       <h1>Batch Image Converter</h1>
-      <p>Convert personal images locally in your browser and download the results individually or together in a ZIP file.</p>
+      <p>Convert personal images locally in your browser and download each result individually.</p>
     </div>
   </section>
   <section class="content">
@@ -149,20 +143,13 @@ footer{background:#fff;border-top:1px solid #f1f3f4;padding:24px 0;color:#5f6368
         <div id="batchStatus" class="status"></div>
         <div class="items-list" id="itemsList"></div>
 
-        <div class="download-all-box" id="downloadAllBox" hidden>
-          <div>
-            <div class="download-all-title">Batch conversion complete</div>
-            <div class="download-all-desc" id="downloadAllDesc">Download all converted files as a single archive.</div>
-          </div>
-          <button class="button primary" id="downloadZipBtn" type="button">Download All (.zip)</button>
-        </div>
       </div>
 
       <div class="info">
         <h2>Local Batch Image Conversion</h2>
-        <p>Batch convert multiple images at once right inside your browser without uploading them to external servers. Maintain aspect ratio, choose image formats, adjust compression, and package all converted images into a single ZIP download.</p>
+        <p>Batch convert multiple images at once right inside your browser without uploading them to external servers. Maintain aspect ratio, choose image formats, adjust compression, and download each converted image individually.</p>
         <h2>Private by design</h2>
-        <p>Your files never leave your machine. All image decoding, resizing, compression, and ZIP packaging are performed locally on your device.</p>
+        <p>Your files never leave your machine. All image decoding, resizing, compression, and compression are performed locally on your device.</p>
       </div>
     </div>
   </section>
@@ -171,7 +158,6 @@ footer{background:#fff;border-top:1px solid #f1f3f4;padding:24px 0;color:#5f6368
   <div class="wrap">© 2026 Clean Local Tools · Your files never leave your machine.</div>
 </footer>
 <script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
