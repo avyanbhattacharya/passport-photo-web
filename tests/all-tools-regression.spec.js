@@ -12,7 +12,6 @@ const tools = [
   ['/clean-pdf-printer/', /Clean PDF Printer/i],
   ['/document-flattener/', /Document Flattener/i],
   ['/image-to-pdf/', /Image to PDF/i],
-  ['/photo-sheet/', /Make a Photo Sheet/i],
   ['/split-pdf/', /Split PDF/i],
   ['/heic-to-jpg/', /HEIC to JPG/i],
   ['/remove-photo-metadata/', /Remove Photo Metadata/i],
