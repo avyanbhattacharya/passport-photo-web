@@ -18,9 +18,6 @@
   const clearBtn = document.getElementById('clearBtn');
   const batchStatus = document.getElementById('batchStatus');
   const itemsList = document.getElementById('itemsList');
-  const downloadAllBox = document.getElementById('downloadAllBox');
-  const downloadAllDesc = document.getElementById('downloadAllDesc');
-  const downloadZipBtn = document.getElementById('downloadZipBtn');
 
   let items = [];
   let isProcessing = false;
@@ -116,10 +113,7 @@
 
   function render() {
     editor.hidden = items.length === 0;
-    if (items.length === 0) {
-      downloadAllBox.hidden = true;
-      return;
-    }
+    if (items.length === 0) return;
 
     const queuedCount = items.filter(i => i.status === 'queued').length;
     const convertingCount = items.filter(i => i.status === 'converting').length;
@@ -204,18 +198,6 @@
       itemsList.append(row);
     });
 
-    if (convertedCount > 0) {
-      downloadAllBox.hidden = false;
-      downloadAllDesc.textContent = `${convertedCount} file${convertedCount === 1 ? '' : 's'} ready for download.`;
-    } else {
-      downloadAllBox.hidden = true;
-    }
-  }
-
-  function getOutputExtension(mime) {
-    if (mime === 'image/png') return 'png';
-    if (mime === 'image/webp') return 'webp';
-    return 'jpg';
   }
 
   function addFiles(incoming) {
@@ -377,43 +359,6 @@
     render();
   }
 
-  async function downloadZip() {
-    if (typeof window.JSZip !== 'function') {
-      setGlobalError('ZIP library could not be loaded.');
-      return;
-    }
-
-    const convertedItems = items.filter(i => i.status === 'converted' && i.outputBlob);
-    if (!convertedItems.length) return;
-
-    downloadZipBtn.disabled = true;
-    downloadZipBtn.textContent = 'Creating ZIP…';
-
-    try {
-      const zip = new window.JSZip();
-      const ext = getOutputExtension(formatEl.value);
-
-      convertedItems.forEach((item, index) => {
-        const base = item.file.name.replace(/\.[^.]+$/, '') || `image_${index + 1}`;
-        zip.file(`${base}.${ext}`, item.outputBlob);
-      });
-
-      const zipBlob = await zip.generateAsync({ type: 'blob' });
-      const zipUrl = URL.createObjectURL(zipBlob);
-
-      const a = document.createElement('a');
-      a.href = zipUrl;
-      a.download = `converted-images.zip`;
-      a.click();
-
-      setTimeout(() => URL.revokeObjectURL(zipUrl), 10000);
-    } catch (e) {
-      setGlobalError('Could not generate ZIP archive.');
-    } finally {
-      downloadZipBtn.disabled = false;
-      downloadZipBtn.textContent = 'Download All (.zip)';
-    }
-  }
 
   // Event Listeners
   chooseBtn.addEventListener('click', () => imageFiles.click());
@@ -445,7 +390,6 @@
     batchStatus.textContent = 'Cancelling…';
   });
   clearBtn.addEventListener('click', clearAllItems);
-  downloadZipBtn.addEventListener('click', downloadZip);
 
   updateQualityState();
 })();
