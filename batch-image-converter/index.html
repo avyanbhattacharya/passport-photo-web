@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#ffffff">
+<meta name="description" content="Your files never leave your machine. Convert a batch of JPEG, PNG, WebP, or HEIC images locally in your browser with quality and dimension controls.">
+<meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1">
+<link rel="canonical" href="https://cleanlocaltools.com/batch-image-converter/">
+<meta property="og:title" content="Batch Image Converter | Clean Local Tools">
+<meta property="og:description" content="Your files never leave your machine. Convert multiple images locally in your browser.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://cleanlocaltools.com/batch-image-converter/">
+<meta property="og:site_name" content="Clean Local Tools">
+<title>Batch Image Converter - Private, Free, No Upload | Clean Local Tools</title>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"Batch Image Converter","url":"https://cleanlocaltools.com/batch-image-converter/","applicationCategory":"UtilitiesApplication","operatingSystem":"Any","description":"Your files never leave your machine. Convert multiple images locally in your browser."}</script>
+<style>
+:root{font-family:Arial,Helvetica,sans-serif;color:#202124;background:#f8f9fa}
+*{box-sizing:border-box}
+body{margin:0;overflow-x:hidden}
+.wrap{width:min(880px,calc(100% - 40px));margin:auto;min-width:0}
+.topbar{height:68px;background:#fff;border-bottom:1px solid #f1f3f4;display:flex;align-items:center}
+.topbar .wrap{display:flex;justify-content:space-between;align-items:center;gap:16px}
+.brand{min-width:0}
+.brand a,.all-tools{text-decoration:none}
+.brand a{color:#202124;font-size:18px;font-weight:600}
+.all-tools{color:#1a73e8;font-size:14px;flex:0 0 auto}
+.hero{text-align:center;padding:54px 0 28px;background:#fff;border-bottom:1px solid #f1f3f4}
+.hero h1{font-size:clamp(32px,6vw,46px);font-weight:500;margin:0 0 12px}
+.hero p{max-width:620px;margin:auto;color:#5f6368;font-size:17px;line-height:1.55}
+.content{padding:34px 0 60px}
+.privacy,.card{border-radius:14px;margin-bottom:18px;min-width:0}
+.privacy{background:#f5f8ff;border:1px solid #e8f0fe;padding:16px 18px;font-size:14px;overflow-wrap:anywhere}
+.card{background:#fff;border:1px solid #dadce0;padding:24px}
+.drop{border:2px dashed #bdc1c6;border-radius:12px;padding:34px 18px;text-align:center;min-width:0;transition:border-color .15s,background-color .15s}
+.drop.dragover{border-color:#1a73e8;background:#f5f8ff}
+.button{display:inline-flex;align-items:center;justify-content:center;border-radius:8px;padding:11px 18px;font-size:15px;font-weight:600;cursor:pointer;border:0;text-decoration:none;max-width:100%}
+.button:disabled{opacity:.5;cursor:not-allowed}
+.primary{background:#1a73e8;color:#fff}
+.secondary{background:#fff;color:#1a73e8;border:1px solid #dadce0}
+.danger{background:#fff;color:#d93025;border:1px solid #fce8e6}
+.file-input{display:none}
+.settings{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:20px}
+.settings>div{min-width:0}
+.settings label{display:block;font-size:13px;font-weight:600;margin-bottom:6px}
+.settings select,.settings input[type="number"]{width:100%;max-width:100%;min-width:0;padding:10px;border:1px solid #dadce0;border-radius:8px;background:#fff;font-size:14px}
+.settings input[type="range"]{width:100%;margin-top:8px}
+.quality-val{font-size:13px;color:#5f6368;margin-top:4px}
+.batch-bar{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding-bottom:16px;border-bottom:1px solid #e0e0e0;margin-bottom:18px}
+.batch-summary{font-weight:600;font-size:15px;color:#202124}
+.batch-actions{display:flex;gap:10px;flex-wrap:wrap}
+.items-list{display:grid;gap:12px;min-width:0}
+.item-row{border:1px solid #e0e0e0;border-radius:10px;padding:14px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;align-items:center;min-width:0;background:#fff}
+.item-row.failed{border-color:#fce8e6;background:#fcf8f8}
+.item-row.converted{border-color:#e6f4ea;background:#f8fcf9}
+.item-info{min-width:0}
+.item-name{font-weight:600;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#202124}
+.item-meta{font-size:12px;color:#5f6368;margin-top:4px;line-height:1.4}
+.item-status{display:inline-block;padding:3px 8px;border-radius:12px;font-size:12px;font-weight:600;margin-top:6px}
+.status-queued{background:#f1f3f4;color:#5f6368}
+.status-converting{background:#e8f0fe;color:#1a73e8}
+.status-converted{background:#e6f4ea;color:#137333}
+.status-failed{background:#fce8e6;color:#c5221f}
+.status-skipped{background:#fef7e0;color:#b06000}
+.item-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+.item-actions .button{padding:7px 12px;font-size:13px}
+.status{margin-top:12px;color:#5f6368;font-size:14px}
+.error{margin-top:12px;color:#a50e0e;overflow-wrap:anywhere}
+.info{color:#5f6368;line-height:1.65;font-size:15px}
+.info h2{color:#202124;font-size:20px;font-weight:500;margin:28px 0 8px}
+footer{background:#fff;border-top:1px solid #f1f3f4;padding:24px 0;color:#5f6368;font-size:13px}
+@media(max-width:600px){
+  .wrap{width:calc(100% - 28px)}
+  .card{padding:18px}
+  .drop{padding:28px 12px}
+  .settings{grid-template-columns:minmax(0,1fr)}
+  .item-row{grid-template-columns:minmax(0,1fr)}
+  .item-actions{width:100%;justify-content:stretch}
+  .item-actions .button{flex:1 1 auto;text-align:center}
+  .batch-bar{flex-direction:column;align-items:stretch}
+  .batch-actions{width:100%}
+  .batch-actions .button{flex:1 1 100%}
+}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="wrap">
+    <div class="brand"><a href="/">Clean Local Tools</a></div>
+    <a class="all-tools" href="/">All tools</a>
+  </div>
+</header>
+<main>
+  <section class="hero">
+    <div class="wrap">
+      <h1>Batch Image Converter</h1>
+      <p>Convert personal images locally in your browser and download each result individually.</p>
+    </div>
+  </section>
+  <section class="content">
+    <div class="wrap">
+      <div class="privacy">🔒 <strong>Your files never leave your machine.</strong> This tool works with your photos right on this device. Nothing is uploaded for processing.</div>
+
+      <div class="card">
+        <div class="drop" id="dropZone">
+          <h2>Add images to batch</h2>
+          <p>Select or drag and drop JPEG, PNG, WebP, or iPhone HEIC photos (up to 30 files).</p>
+          <button class="button primary" id="chooseBtn" type="button">Choose Images</button>
+          <input class="file-input" id="imageFiles" type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.jpg,.jpeg,.png,.webp,.heic,.heif" multiple>
+        </div>
+        <div id="globalError" class="error" hidden></div>
+      </div>
+
+      <div class="card" id="editor" hidden>
+        <div class="settings">
+          <div>
+            <label for="format">Output format</label>
+            <select id="format">
+              <option value="image/jpeg">JPG</option>
+              <option value="image/png">PNG</option>
+              <option value="image/webp">WebP</option>
+            </select>
+          </div>
+          <div>
+            <label for="quality">Quality</label>
+            <input id="quality" type="range" min="10" max="100" value="90">
+            <div id="qualityValue" class="quality-val">90%</div>
+          </div>
+          <div>
+            <label for="maxDimension">Max dimension (px)</label>
+            <input id="maxDimension" type="number" min="100" max="12000" placeholder="e.g. 2048 (optional)">
+          </div>
+        </div>
+
+        <div class="batch-bar">
+          <div class="batch-summary" id="batchSummary">0 items</div>
+          <div class="batch-actions">
+            <button class="button primary" id="convertBatchBtn" type="button">Convert Batch</button>
+            <button class="button secondary" id="cancelBtn" type="button" hidden>Cancel</button>
+            <button class="button secondary" id="clearBtn" type="button">Clear All</button>
+          </div>
+        </div>
+
+        <div id="batchStatus" class="status"></div>
+        <div class="items-list" id="itemsList"></div>
+
+      </div>
+
+      <div class="info">
+        <h2>Convert a group of photos at once</h2>
+        <p>Choose a format, quality, or size limit once, then download each converted image individually.</p>
+        <h2>Private by design</h2>
+        <p>Your photos stay on this device while they are converted. Helper code may load in your browser, but your files are not sent away for processing. Each converted file downloads separately in v1.</p>
+      </div>
+    </div>
+  </section>
+</main>
+<footer>
+  <div class="wrap">© 2026 Clean Local Tools · Your files never leave your machine.</div>
+</footer>
+<script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
