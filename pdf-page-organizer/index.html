@@ -7,12 +7,12 @@
   <meta name="description" content="Your files never leave your machine. Rearrange PDF pages, rotate, delete, or duplicate pages locally in your browser without uploading files.">
   <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1">
   <link rel="canonical" href="https://cleanlocaltools.com/pdf-page-organizer/">
-  <meta property="og:title" content="PDF Page Organizer - Rearrange, Rotate & Delete Pages | Clean Local Tools">
+  <meta property="og:title" content="PDF Page Organizer - Private, Free, No Upload | Clean Local Tools">
   <meta property="og:description" content="Your files never leave your machine. Rearrange, rotate, duplicate, and delete PDF pages locally in your browser.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://cleanlocaltools.com/pdf-page-organizer/">
   <meta property="og:site_name" content="Clean Local Tools">
-  <title>PDF Page Organizer - Rearrange, Rotate & Delete Pages | Clean Local Tools</title>
+  <title>PDF Page Organizer - Private, Free, No Upload | Clean Local Tools</title>
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"PDF Page Organizer","url":"https://cleanlocaltools.com/pdf-page-organizer/","applicationCategory":"UtilitiesApplication","operatingSystem":"Any","description":"Your files never leave your machine. Rearrange, rotate, duplicate, and delete PDF pages locally in your browser."}</script>
   <style>
     :root{font-family:Arial,Helvetica,sans-serif;color:#202124;background:#f8f9fa}
@@ -52,7 +52,7 @@
     .batch-actions{margin-bottom:18px;padding:12px 14px;background:#f8f9fa;border:1px solid #e8eaed;border-radius:10px}
     .batch-label{font-size:13px;font-weight:600;color:#5f6368;margin-right:4px}
 
-    .page-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:16px;margin-bottom:24px}
+    .slots-note{margin:0 0 14px;color:#5f6368;font-size:14px;line-height:1.5}.page-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:16px;margin-bottom:24px}
     .page-card{background:#fff;border:2px solid #dadce0;border-radius:12px;padding:12px;display:flex;flex-direction:column;align-items:center;gap:10px;transition:border-color .15s,box-shadow .15s;position:relative}
     .page-card.selected{border-color:#1a73e8;background:#f5f8ff}
     .page-card:focus-within,.page-card:focus{border-color:#1a73e8;outline:2px solid #1a73e8;outline-offset:2px}
@@ -143,11 +143,13 @@
             <span class="batch-label">Selected pages:</span>
             <button class="button secondary" id="rotateLeftSelected" type="button" disabled title="Rotate selected 90° counter-clockwise">⟲ Rotate left</button>
             <button class="button secondary" id="rotateRightSelected" type="button" disabled title="Rotate selected 90° clockwise">↻ Rotate right</button>
-            <button class="button secondary" id="duplicateSelected" type="button" disabled title="Duplicate selected pages">📋 Duplicate</button>
-            <button class="button danger" id="deleteSelected" type="button" disabled title="Delete selected pages">🗑️ Delete</button>
+            <button class="button secondary" id="duplicateSelected" type="button" disabled title="Duplicate selected pages">Duplicate</button>
+            <button class="button danger" id="deleteSelected" type="button" disabled title="Delete selected pages">Delete</button>
           </div>
 
-          <div class="page-grid" id="pages" role="region" aria-label="PDF Page List"></div>
+          <p class="slots-note">Page images are not shown in v1. These page slots show order and rotation; your exported PDF keeps the real page content.</p>
+
+          <div class="page-grid" id="pages" role="region" aria-label="PDF Page Slots"></div>
 
           <div class="export-bar">
             <div class="status" id="status" aria-live="polite"></div>
@@ -163,11 +165,11 @@
 
         <div class="info">
           <h2>How it works</h2>
-          <p>Import a PDF document to view page thumbnails. Use the move controls (← and →) to reorder pages, rotate individual or selected pages in 90-degree increments, duplicate pages, or delete unwanted pages. Once satisfied, select Export PDF to generate and download the new document.</p>
+          <p>Import a PDF document to arrange its page slots. Use the move controls (← and →) to reorder pages, rotate individual or selected pages in 90-degree increments, duplicate pages, or delete unwanted pages. Once satisfied, select Export PDF to generate and download the new document.</p>
           <h2>File limits &amp; unsupported documents</h2>
           <p>To keep browser memory and processing bounded, files are recommended up to 100 MB or 500 pages. Password-protected or encrypted PDFs are not supported and should be unlocked before importing.</p>
           <h2>Private by design</h2>
-          <p>Your files never leave your machine. Your PDF stays on this device while all page manipulations and exports take place. Third-party helper scripts may be loaded by your browser, but your document content is never sent to any server.</p>
+          <p>Your PDF stays on this device while pages are arranged and exported. Helper scripts may load in your browser, but your document is not sent away for processing.</p>
         </div>
       </div>
     </section>
