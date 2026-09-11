@@ -1,15 +1,3 @@
-let pdfjsPromise = null;
-async function loadPdfJs() {
-  if (window.pdfjsLib) return window.pdfjsLib;
-  if (!pdfjsPromise) {
-    pdfjsPromise = import('https://cdn.jsdelivr.net/npm/pdfjs-dist@5.7.284/build/pdf.min.mjs').then((lib) => {
-      lib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@5.7.284/build/pdf.worker.min.mjs';
-      return lib;
-    });
-  }
-  return pdfjsPromise;
-}
-
 const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100 MB
 const MAX_PAGE_COUNT = 500;
 
@@ -18,7 +6,6 @@ const $ = (id) => document.getElementById(id);
 let currentFile = null;
 let sourceBytes = null;
 let pdfLibDoc = null;
-let pdfJsDoc = null;
 let pages = [];
 let nextId = 1;
 let exportUrl = null;
@@ -46,39 +33,24 @@ function revokeExportUrl() {
 }
 
 async function renderThumbnailCanvas(srcIndex) {
-  if (thumbCache.has(srcIndex)) {
-    return thumbCache.get(srcIndex);
-  }
-  if (!pdfJsDoc) return null;
+  if (thumbCache.has(srcIndex)) return thumbCache.get(srcIndex);
 
-  try {
-    const pdfPage = await pdfJsDoc.getPage(srcIndex + 1);
-    const unscaledViewport = pdfPage.getViewport({ scale: 1 });
-    const targetWidth = 160;
-    const scale = targetWidth / unscaledViewport.width;
-    const viewport = pdfPage.getViewport({ scale });
-
-    const canvas = document.createElement('canvas');
-    canvas.width = Math.round(viewport.width);
-    canvas.height = Math.round(viewport.height);
-    const ctx = canvas.getContext('2d');
-
-    await pdfPage.render({ canvasContext: ctx, viewport }).promise;
-    thumbCache.set(srcIndex, canvas);
-    return canvas;
-  } catch (err) {
-    console.error('Thumbnail render error:', err);
-    const fallback = document.createElement('canvas');
-    fallback.width = 120;
-    fallback.height = 160;
-    const ctx = fallback.getContext('2d');
-    ctx.fillStyle = '#f1f3f4';
-    ctx.fillRect(0, 0, 120, 160);
-    ctx.fillStyle = '#5f6368';
-    ctx.font = '12px sans-serif';
-    ctx.fillText('Page ' + (srcIndex + 1), 30, 85);
-    return fallback;
-  }
+  // Page content stays local. Without an additional renderer, use a numbered
+  // placeholder rather than loading a second PDF runtime or worker.
+  const canvas = document.createElement('canvas');
+  canvas.width = 120;
+  canvas.height = 160;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#f1f3f4';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.strokeStyle = '#dadce0';
+  ctx.strokeRect(0.5, 0.5, canvas.width - 1, canvas.height - 1);
+  ctx.fillStyle = '#5f6368';
+  ctx.font = '12px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Page ' + (srcIndex + 1), canvas.width / 2, canvas.height / 2);
+  thumbCache.set(srcIndex, canvas);
+  return canvas;
 }
 
 async function loadFile(file) {
@@ -109,16 +81,12 @@ async function loadFile(file) {
       return;
     }
 
-    const pdfjs = await loadPdfJs();
-    const jsDoc = await pdfjs.getDocument({ data: bytes.slice() }).promise;
-
     // Reset cache and state for new document
     thumbCache.clear();
     revokeExportUrl();
     currentFile = file;
     sourceBytes = bytes;
     pdfLibDoc = doc;
-    pdfJsDoc = jsDoc;
     pages = [];
 
     for (let i = 0; i < totalPages; i++) {
