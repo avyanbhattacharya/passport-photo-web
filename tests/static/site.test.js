@@ -26,7 +26,7 @@ const pages = [
   ['/principles/', 'principles/index.html', 'https://cleanlocaltools.com/principles/']
 ];
 const homepageRoutes = pages.filter(([route]) => route !== '/').map(([route]) => route).filter(route => !['/japa-counter/tap.html','/about/','/principles/'].includes(route));
-const brandedFilePages = ['compress-pdf/index.html','pdf-page-organizer/index.html','merge-pdf/index.html','clean-pdf-printer/index.html','document-flattener/index.html','image-to-pdf/index.html','split-pdf/index.html','heic-to-jpg/index.html','remove-photo-metadata/index.html'];
+const brandedFilePages = ['pdf-page-organizer/index.html','compress-pdf/index.html','pdf-page-organizer/index.html','merge-pdf/index.html','clean-pdf-printer/index.html','document-flattener/index.html','image-to-pdf/index.html','split-pdf/index.html','heic-to-jpg/index.html','remove-photo-metadata/index.html'];
 function read(relative){return fs.readFileSync(path.join(root, relative), 'utf8');}
 function appSourceFor(htmlPath){const appPath=path.join(path.dirname(htmlPath),'app.js'),absolute=path.join(root,appPath);return fs.existsSync(absolute)?fs.readFileSync(absolute,'utf8'):'';}
 function escapeRegex(value){return value.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');}
