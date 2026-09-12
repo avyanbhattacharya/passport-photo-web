@@ -33,7 +33,9 @@
            |
    Cache Full-Resolution Source ImageData
            |
-   Manual Corner Selection (4-point normalized coordinates, ARIA accessible)
+   Optional Local Edge Detection (bounded downscaled contrast analysis)
+           |
+   Manual Corner Review / Selection (4-point normalized coordinates, ARIA accessible)
            |
    Geometric Corner Validation (Convexity &amp; Edge length check)
            |
@@ -48,6 +50,8 @@
    Result Output Canvas (Max 3000px edge cap, request-cancellation check)
            |
    Export to JPEG / A4 or Letter PDF via pdf-lib</code></pre>
+<h2 id="automatic-edge-detection">Automatic Edge Detection</h2>
+<p>The optional <strong>Detect Edges</strong> action analyzes a temporary downscaled canvas capped at 640 pixels on its longest edge. It estimates outer-background brightness from a narrow edge band, finds pixels with sufficient contrast, and uses the four directional extremes to propose a convex quadrilateral. This is a starting point for common high-contrast document photos, not a guarantee: low-contrast or busy scenes can fail cleanly and leave the existing keyboard/touch manual controls available. The analysis stays in browser memory and does not add a service, dependency, or upload path.</p>
 <h2 id="homography-perspective-correction-bilinear-interpolation">Homography Perspective Correction &amp; Bilinear Interpolation</h2>
 <ol><li><strong>Coordinate Systems:</strong> Corner coordinates $P_0, P_1, P_2, P_3$ are maintained in normalized canvas space $[0.0, 1.0]$. The source pixel dimensions $(IW, IH)$ convert these to pixel coordinates $S_i = (u_i, v_i)$.</li><li><strong>Target Dimensions:</strong> Target scan dimensions $W$ and $H$ are derived from the maximum opposite edge lengths:</li></ol>
 <p>$$W = \max(\|S_1 - S_0\|, \|S_2 - S_3\|)$$ $$H = \max(\|S_3 - S_0\|, \|S_2 - S_1\|)$$ Output dimensions are capped so that $\max(W, H) \le 3000$ pixels to preserve browser memory and prevent canvas allocation crashes.</p>
