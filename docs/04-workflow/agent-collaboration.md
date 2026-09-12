@@ -9,7 +9,9 @@ section: Workflow
 
 # Human, Codex and Jules Workflow
 
-The owner makes product and release decisions. Codex prepares specifications, reviews implementations and verifies releases. Jules implements approved work and addresses review findings. The owner should not need to copy instructions between agents or announce new commits.
+The owner makes product and release decisions. Codex prepares specifications, reviews implementations and verifies releases. Jules is the default implementation agent, and Codex/ChatGPT may also implement or repair owner-approved work at any time. The owner should not need to copy instructions between agents or announce new commits.
+
+Codex does not need a separate per-fix authorization once the owner has approved a task: it may make bounded implementation, test, documentation, and CI-repair changes necessary to complete that task. This does not authorize merging, production changes, new paid services, or expansion beyond the approved scope. The owner still tests the preview and explicitly approves the exact version before merge.
 
 ## What is established and what is pending
 
@@ -28,10 +30,10 @@ Until the trigger is configured, review requires an active Codex session. Do not
 1. Codex proposes an app: user problem, expected experience, initial scope, exclusions, privacy implications and testing approach.
 2. The owner approves the idea and scope. Codex records that approval with a versioned task brief in a GitHub issue, using the companion brief template. Significant scope changes return to the owner.
 3. After approval and verified Jules repository access, Codex applies the `jules` label to start work. Record the Jules session link and issue link. Do not apply this label to drafts or ambiguous requests.
-4. Jules reads `AGENTS.md` and the approved brief, starts from current `main`, implements on a dedicated branch, adds tests and documentation, and opens a PR targeting `main`. The PR links the issue and session.
+4. Jules or Codex reads `AGENTS.md` and the approved brief, starts from current `main`, implements on a dedicated branch, adds tests and documentation, and opens a PR targeting `main`. The PR links the issue and relevant session when applicable.
 5. CI and Cloudflare preview deployment run. Record the PR head SHA, CI results, deployment commit and actual preview link. Preview deployment is not production approval.
 6. Codex reviews scope, code, privacy, failure behavior, design consistency, accessibility and test evidence for that SHA. Check exported results rather than trusting button clicks alone. Identify which manual or physical-device checks remain.
-7. If changes are needed, Codex submits one consolidated review mentioning `@Jules`. Jules acknowledges it, addresses the findings and pushes fixes to the same PR branch. New commits invalidate the previous review result and trigger another review once that trigger is installed.
+7. If changes are needed, Codex may implement the bounded fix directly on the same PR branch, or submit one consolidated review mentioning `@Jules` when delegating. Either agent records the new commit and test evidence. New commits invalidate the previous review result and trigger another review once that trigger is installed.
 8. After review passes and required CI is green, Codex prepares a release summary: app behavior, limitations, preview URL, exact commit, test evidence and a short manual test checklist. Deliver it through the active conversation; automatic delivery through GitHub notifications is a future integration, subject to the owner's notification settings.
 9. The owner tests the preview and explicitly approves release. Record approval against the reviewed head SHA. New substantive changes require another preview approval; any new commit requires renewed verification before merge.
 10. Codex checks that the head still matches approval, required checks pass, conflicts are resolved and production conventions are preserved. Merge through the PR without bypassing repository protections. If integration changes are needed, return to review before release.
@@ -43,7 +45,7 @@ Use at most three correction rounds per approved task. After round three, stop t
 
 Use stable finding identifiers such as R1-01. For each finding provide severity, file/location, observed problem, requested outcome and a concrete verification condition. Separate blockers from optional suggestions. Acknowledge valid disagreement and do not repeatedly request the same fix without new evidence.
 
-Jules responds with the finding ID, disposition (fixed, disputed or blocked), evidence and resulting commit. If it cannot act, Codex reports the missing integration or technical blocker rather than asking the owner to ferry the comment.
+When delegated, Jules responds with the finding ID, disposition (fixed, disputed or blocked), evidence and resulting commit. Codex may instead implement the correction directly and records the same evidence. If neither route can act, Codex reports the missing integration or technical blocker rather than asking the owner to ferry the comment.
 
 Suggested review structure:
 
