@@ -124,7 +124,7 @@ footer{padding:13px 0}
         <div class="workspace">
           <div class="panel">
             <h2>1. Adjust corners</h2>
-            <p class="note">Drag the four corner handles or use Arrow keys (Shift for larger steps) to select document boundaries.</p>
+            <p class="note">Use Detect Edges for a starting point, then drag the four corner handles or use Arrow keys (Shift for larger steps) to fine-tune document boundaries.</p>
             <div class="canvas-wrap">
               <div class="canvas-box" id="sourceBox">
                 <canvas id="sourceCanvas"></canvas>
@@ -162,6 +162,7 @@ footer{padding:13px 0}
           </div>
         </div>
         <div class="controls">
+          <button class="button" id="detectEdgesBtn" type="button">Detect Edges</button>
           <button class="button" id="resetBtn" type="button">Reset Corners &amp; Filters</button>
           <div class="select-control">
             <label for="pdfPageSize">PDF Page Size:</label>
@@ -181,7 +182,7 @@ footer{padding:13px 0}
       </div>
       <div class="info">
         <h2>Straighten document photographs locally</h2>
-        <p>Photo to Scan performs 4-point homography perspective correction on photographs of paper documents. Drag the corner handles to outline the document edges, select color, grayscale or high-contrast processing, and export a clean JPEG or PDF.</p>
+        <p>Photo to Scan can find a high-contrast document boundary on your device to set a starting point. Review and adjust the four corners as needed, then select color, grayscale or high-contrast processing and export a clean JPEG or PDF.</p>
         <h2>Private by design</h2>
         <p>Your files never leave your machine. Your document photo stays strictly on this device while processing happens inside your browser. Nothing is uploaded or transmitted to a remote server.</p>
       </div>
