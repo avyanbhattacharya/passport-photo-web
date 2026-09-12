@@ -40,7 +40,7 @@ Input File (JPEG, PNG, WebP)
            |
    Brightness & Contrast Slider Adjustment (Debounced Render)
            |
-   Result Output Canvas (Max 3000px edge cap, request-cancellation check)
+   Result Output Canvas (Max 3000px edge cap, chunked cancellable render)
            |
    Export to JPEG / A4 or Letter PDF via pdf-lib
 ```
@@ -70,7 +70,7 @@ To prevent invalid transformations, NaN/Infinity divide-by-zero errors, or degen
 ## Performance & Responsiveness Optimizations
 
 - **ImageData Caching:** Source image pixel data (`ImageData`) is extracted once upon decode and cached in memory, eliminating redundant canvas GPU-to-CPU readbacks during interactive adjustments.
-- **Render Debouncing & Superseded Request Cancellation:** Slider adjustments are debounced by 30ms. Each render task tracks an incremental `renderRequestId`. If a new user interaction occurs while a render is running or scheduled, superseded requests terminate immediately without writing stale results to the output canvas.
+- **Render Debouncing & Superseded Request Cancellation:** Slider adjustments are debounced by 30ms. Rendering processes at most 24 output rows before yielding to the browser event loop and checking an incremental `renderRequestId`. A newer interaction can therefore cancel in-flight work between bounded chunks; only the latest completed request may replace the output canvas or enable export.
 
 ## Resource & Input Caps
 
