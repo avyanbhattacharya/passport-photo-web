@@ -314,3 +314,27 @@ test('Photo to scan editor has no horizontal page overflow on mobile viewports',
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   expect(overflow).toBeLessThanOrEqual(1);
 });
+
+
+test('Detect Edges finds the high-contrast document boundary and keeps manual adjustment available', async ({ page }) => {
+  await page.goto('/photo-to-scan/');
+  const file = await testSkewedPng(page);
+  await page.locator('#fileInput').setInputFiles(file);
+  await expect(page.locator('#editor')).toBeVisible();
+
+  await page.getByRole('button', { name: 'Detect Edges' }).click();
+  await expect(page.locator('#status')).toContainText('Edges detected');
+
+  const detected = await page.evaluate(() => window.__photoToScanDebug.lastDetectedCorners);
+  expect(detected).not.toBeNull();
+  const expected = [[0.15, 0.133], [0.875, 0.2], [0.813, 0.867], [0.125, 0.8]];
+  detected.forEach((point, index) => {
+    expect(Math.abs(point[0] - expected[index][0])).toBeLessThan(0.06);
+    expect(Math.abs(point[1] - expected[index][1])).toBeLessThan(0.06);
+  });
+
+  const handle = page.locator('.corner[data-i="0"]');
+  await handle.focus();
+  await page.keyboard.press('ArrowRight');
+  await expect(handle).toHaveAttribute('aria-valuenow', /d+/);
+});
