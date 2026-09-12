@@ -47,7 +47,7 @@
            |
    Brightness &amp; Contrast Slider Adjustment (Debounced Render)
            |
-   Result Output Canvas (Max 3000px edge cap, chunked cancellable render)
+   Result Output Canvas (Max 3000px edge cap, request-cancellation check)
            |
    Export to JPEG / A4 or Letter PDF via pdf-lib</code></pre>
 <h2 id="automatic-edge-detection">Automatic Edge Detection</h2>
@@ -62,7 +62,7 @@
 <p>To prevent invalid transformations, NaN/Infinity divide-by-zero errors, or degenerate output renders, corner selection quadrilaterals are validated before rendering:</p>
 <ul><li><strong>Minimum Edge Length:</strong> Every adjacent corner pair must have a normalized Euclidean distance of at least 0.03.</li><li><strong>Strict Convexity:</strong> The 2D cross products of adjacent edge vectors must all share the same sign and exceed a non-zero area threshold ($&gt; 0.001$). Crossed, collinear, or inverted corner configurations are rejected with a clear user notice.</li></ul>
 <h2 id="performance-responsiveness-optimizations">Performance &amp; Responsiveness Optimizations</h2>
-<ul><li><strong>ImageData Caching:</strong> Source image pixel data (<code>ImageData</code>) is extracted once upon decode and cached in memory, eliminating redundant canvas GPU-to-CPU readbacks during interactive adjustments.</li><li><strong>Render Debouncing &amp; Superseded Request Cancellation:</strong> Slider adjustments are debounced by 30ms. Rendering processes at most 24 output rows before yielding to the browser event loop and checking an incremental <code>renderRequestId</code>. A newer interaction can therefore cancel in-flight work between bounded chunks; only the latest completed request may replace the output canvas or enable export.</li></ul>
+<ul><li><strong>ImageData Caching:</strong> Source image pixel data (<code>ImageData</code>) is extracted once upon decode and cached in memory, eliminating redundant canvas GPU-to-CPU readbacks during interactive adjustments.</li><li><strong>Render Debouncing &amp; Superseded Request Cancellation:</strong> Slider adjustments are debounced by 30ms. Each render task tracks an incremental <code>renderRequestId</code>. If a new user interaction occurs while a render is running or scheduled, superseded requests terminate immediately without writing stale results to the output canvas.</li></ul>
 <h2 id="resource-input-caps">Resource &amp; Input Caps</h2>
 <ul><li><strong>File Size Cap:</strong> Maximum 15 MiB input file size enforced before image decoding.</li><li><strong>Decoded Resolution Cap:</strong> Maximum 20 megapixels ($W \times H \le 20,000,000$) checked immediately after natural image dimensions are available.</li><li><strong>Output Edge Cap:</strong> Maximum 3000 pixels on the longest edge.</li><li><strong>Memory Management:</strong> Blob URLs and intermediate image decodes are revoked when files are replaced or processing finishes.</li></ul>
 <h2 id="accessibility-keyboard-controls">Accessibility &amp; Keyboard Controls</h2>
