@@ -26,7 +26,9 @@ Input File (JPEG, PNG, WebP)
            |
    Cache Full-Resolution Source ImageData
            |
-   Manual Corner Selection (4-point normalized coordinates, ARIA accessible)
+   Optional Local Edge Detection (bounded downscaled contrast analysis)
+           |
+   Manual Corner Review / Selection (4-point normalized coordinates, ARIA accessible)
            |
    Geometric Corner Validation (Convexity & Edge length check)
            |
@@ -42,6 +44,10 @@ Input File (JPEG, PNG, WebP)
            |
    Export to JPEG / A4 or Letter PDF via pdf-lib
 ```
+
+## Automatic Edge Detection
+
+The optional **Detect Edges** action analyzes a temporary downscaled canvas capped at 640 pixels on its longest edge. It estimates outer-background brightness from a narrow edge band, finds pixels with sufficient contrast, and uses the four directional extremes to propose a convex quadrilateral. This is a starting point for common high-contrast document photos, not a guarantee: low-contrast or busy scenes can fail cleanly and leave the existing keyboard/touch manual controls available. The analysis stays in browser memory and does not add a service, dependency, or upload path.
 
 ## Homography Perspective Correction & Bilinear Interpolation
 
