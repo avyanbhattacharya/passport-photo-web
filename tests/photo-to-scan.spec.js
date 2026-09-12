@@ -304,7 +304,7 @@ test('Decodes downloaded JPEG and asserts dimensions; inspects downloaded PDF wi
         const decoded = decodePDFRawStream(stream).decode();
         return new TextDecoder('latin1').decode(decoded);
       })
-      .find(text => /\/Image\w*\s+Do/.test(text)) || '';
+      .find(text => /\/Image[^\\s]*\\s+Do/.test(text)) || '';
     const matrices = [...contents.matchAll(/(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)\s+cm/g)]
       .map(match => match.slice(1).map(Number));
     const scale = matrices.find(([a, b, c, d]) => a > 100 && d > 100 && b === 0 && c === 0);
@@ -314,7 +314,7 @@ test('Decodes downloaded JPEG and asserts dimensions; inspects downloaded PDF wi
       height,
       imageWidth: image && image.dict.lookup(PDFName.of('Width')).asNumber(),
       imageHeight: image && image.dict.lookup(PDFName.of('Height')).asNumber(),
-      drawsImage: /\/Image\w*\s+Do/.test(contents),
+      drawsImage: /\/Image[^\\s]*\\s+Do/.test(contents),
       drawWidth: scale && scale[0],
       drawHeight: scale && scale[3]
     };
