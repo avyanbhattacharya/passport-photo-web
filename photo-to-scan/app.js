@@ -10,6 +10,7 @@
   const fileInput = $('fileInput');
   const chooseImageBtn = $('chooseImageBtn');
   const resetBtn = $('resetBtn');
+  const detectEdgesBtn = $('detectEdgesBtn');
   const exportJpgBtn = $('exportJpgBtn');
   const exportPdfBtn = $('exportPdfBtn');
   const pdfPageSizeSelect = $('pdfPageSize');
@@ -33,7 +34,7 @@
   let renderRequestId = 0;
   let currentObjectUrl = null;
   let renderDebounceTimer = null;
-  window.__photoToScanDebug = { sourceImageDataReads: 0, scheduled: 0, completed: 0, superseded: 0 };
+  window.__photoToScanDebug = { sourceImageDataReads: 0, scheduled: 0, completed: 0, superseded: 0, lastDetectedCorners: null };
 
   chooseImageBtn.addEventListener('click', () => {
     fileInput.value = '';
@@ -140,6 +141,64 @@
       uploadError.textContent = 'Failed to decode image. Please select a valid JPEG, PNG or WebP image.';
       statusEl.textContent = '';
     }
+  }
+
+  function detectDocumentCorners() {
+    if (!cachedSourceImageData || !fullCanvas.width || !fullCanvas.height) return null;
+
+    // Analyze a bounded downscaled copy so detection stays responsive and local.
+    const maxEdge = 640;
+    const scale = Math.min(1, maxEdge / Math.max(fullCanvas.width, fullCanvas.height));
+    const width = Math.max(1, Math.round(fullCanvas.width * scale));
+    const height = Math.max(1, Math.round(fullCanvas.height * scale));
+    const sample = document.createElement('canvas');
+    sample.width = width;
+    sample.height = height;
+    const ctx = sample.getContext('2d', { willReadFrequently: true });
+    ctx.drawImage(fullCanvas, 0, 0, width, height);
+    const pixels = ctx.getImageData(0, 0, width, height).data;
+
+    const luminance = (index) => 0.299 * pixels[index] + 0.587 * pixels[index + 1] + 0.114 * pixels[index + 2];
+    const border = [];
+    const inset = Math.max(2, Math.floor(Math.min(width, height) * 0.04));
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        if (x < inset || y < inset || x >= width - inset || y >= height - inset) border.push(luminance((y * width + x) * 4));
+      }
+    }
+    const background = border.reduce((sum, value) => sum + value, 0) / Math.max(1, border.length);
+    const candidates = [];
+    const threshold = 22;
+    for (let y = inset; y < height - inset; y++) {
+      for (let x = inset; x < width - inset; x++) {
+        const index = (y * width + x) * 4;
+        if (Math.abs(luminance(index) - background) >= threshold) candidates.push([x, y]);
+      }
+    }
+    if (candidates.length < Math.max(80, width * height * 0.01)) return null;
+
+    const pick = (score) => candidates.reduce((best, point) => score(point) < score(best) ? point : best, candidates[0]);
+    const tl = pick(([x, y]) => x + y);
+    const tr = pick(([x, y]) => -x + y);
+    const br = pick(([x, y]) => -x - y);
+    const bl = pick(([x, y]) => x - y);
+    const detected = [tl, tr, br, bl].map(([x, y]) => [x / (width - 1), y / (height - 1)]);
+    return validateQuad(detected).valid ? detected : null;
+  }
+
+  function applyDetectedCorners() {
+    const detected = detectDocumentCorners();
+    if (!detected) {
+      editorError.textContent = 'Could not detect clear document edges. Adjust the four corners manually.';
+      statusEl.textContent = '';
+      return;
+    }
+    pts = detected;
+    window.__photoToScanDebug.lastDetectedCorners = detected.map(point => [...point]);
+    editorError.textContent = '';
+    statusEl.textContent = 'Edges detected. Review and adjust the corners if needed.';
+    updateHandles();
+    scheduleRender();
   }
 
   function resetPointsAndFilters() {
@@ -523,6 +582,8 @@
     contrastVal.textContent = contrastInput.value;
     scheduleRender(30);
   });
+
+  detectEdgesBtn.addEventListener('click', applyDetectedCorners);
 
   resetBtn.addEventListener('click', () => {
     resetPointsAndFilters();
