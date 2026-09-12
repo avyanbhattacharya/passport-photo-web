@@ -34,7 +34,16 @@
   let renderRequestId = 0;
   let currentObjectUrl = null;
   let renderDebounceTimer = null;
-  window.__photoToScanDebug = { sourceImageDataReads: 0, scheduled: 0, completed: 0, superseded: 0, lastDetectedCorners: null };
+  window.__photoToScanDebug = {
+    sourceImageDataReads: 0,
+    scheduled: 0,
+    started: 0,
+    completed: 0,
+    superseded: 0,
+    lastCommittedRequestId: 0,
+    lastCommittedBrightness: 0,
+    lastDetectedCorners: null
+  };
 
   chooseImageBtn.addEventListener('click', () => {
     fileInput.value = '';
@@ -328,23 +337,30 @@
   function scheduleRender(debounceMs = 0) {
     const requestId = ++renderRequestId;
     window.__photoToScanDebug.scheduled++;
+    exportJpgBtn.disabled = true;
+    exportPdfBtn.disabled = true;
     if (renderDebounceTimer) clearTimeout(renderDebounceTimer);
 
     if (debounceMs > 0) {
       renderDebounceTimer = setTimeout(() => {
-        requestAnimationFrame(() => renderResult(requestId));
+        requestAnimationFrame(() => { void renderResult(requestId); });
       }, debounceMs);
     } else {
-      requestAnimationFrame(() => renderResult(requestId));
+      requestAnimationFrame(() => { void renderResult(requestId); });
     }
   }
 
-  function renderResult(requestId) {
+  async function renderResult(requestId) {
     // CLT-PTS-004: Ensure superseded render requests do not proceed or overwrite canvas
     if (requestId !== renderRequestId || !activeImg || !cachedSourceImageData) { window.__photoToScanDebug.superseded++; return; }
+    window.__photoToScanDebug.started++;
 
     editorError.textContent = '';
-    const quadCheck = validateQuad(pts);
+    const pointsSnapshot = pts.map(point => [...point]);
+    const modeSnapshot = activeMode;
+    const brightness = parseInt(brightnessInput.value, 10) || 0;
+    const contrast = parseInt(contrastInput.value, 10) || 0;
+    const quadCheck = validateQuad(pointsSnapshot);
 
     if (!quadCheck.valid) {
       editorError.textContent = quadCheck.reason;
@@ -357,12 +373,9 @@
       return;
     }
 
-    exportJpgBtn.disabled = false;
-    exportPdfBtn.disabled = false;
-
     const iw = fullCanvas.width;
     const ih = fullCanvas.height;
-    const srcPts = pts.map(([x, y]) => [x * iw, y * ih]);
+    const srcPts = pointsSnapshot.map(([x, y]) => [x * iw, y * ih]);
 
     // Destination dimensions calculated from edge distances
     const topW = distance(srcPts[0], srcPts[1]);
@@ -378,9 +391,6 @@
     const W = Math.max(1, Math.round(targetW * scale));
     const H = Math.max(1, Math.round(targetH * scale));
 
-    resultCanvas.width = W;
-    resultCanvas.height = H;
-
     const dstPts = [[0, 0], [W - 1, 0], [W - 1, H - 1], [0, H - 1]];
     const M = computeHomography(dstPts, srcPts);
 
@@ -395,84 +405,94 @@
     const outputData = new ImageData(W, H);
     const oData = outputData.data;
 
-    const brightness = parseInt(brightnessInput.value, 10) || 0;
-    const contrast = parseInt(contrastInput.value, 10) || 0;
-
     // Contrast factor formula
     const contrastFactor = (259 * (contrast + 255)) / (255 * (259 - contrast));
     const bOffset = brightness * 2.55;
 
     // CLT-PTS-001: Bilinear Interpolation for smooth resampling
-    for (let y = 0; y < H; y++) {
-      if (requestId !== renderRequestId) { window.__photoToScanDebug.superseded++; return; } // Superseded check during loop
-      for (let x = 0; x < W; x++) {
-        const denom = M[6] * x + M[7] * y + M[8];
-        if (Math.abs(denom) < 1e-12) continue;
+    const rowsPerChunk = 24;
+    for (let chunkStart = 0; chunkStart < H; chunkStart += rowsPerChunk) {
+      if (requestId !== renderRequestId) { window.__photoToScanDebug.superseded++; return; }
+      const chunkEnd = Math.min(H, chunkStart + rowsPerChunk);
+      for (let y = chunkStart; y < chunkEnd; y++) {
+        for (let x = 0; x < W; x++) {
+          const denom = M[6] * x + M[7] * y + M[8];
+          if (Math.abs(denom) < 1e-12) continue;
 
-        const sx = (M[0] * x + M[1] * y + M[2]) / denom;
-        const sy = (M[3] * x + M[4] * y + M[5]) / denom;
+          const sx = (M[0] * x + M[1] * y + M[2]) / denom;
+          const sy = (M[3] * x + M[4] * y + M[5]) / denom;
 
-        // Clamped continuous floating point coordinates
-        const csx = Math.max(0, Math.min(iw - 1, sx));
-        const csy = Math.max(0, Math.min(ih - 1, sy));
+          // Clamped continuous floating point coordinates
+          const csx = Math.max(0, Math.min(iw - 1, sx));
+          const csy = Math.max(0, Math.min(ih - 1, sy));
 
-        const x0 = Math.floor(csx);
-        const y0 = Math.floor(csy);
-        const x1 = Math.min(iw - 1, x0 + 1);
-        const y1 = Math.min(ih - 1, y0 + 1);
+          const x0 = Math.floor(csx);
+          const y0 = Math.floor(csy);
+          const x1 = Math.min(iw - 1, x0 + 1);
+          const y1 = Math.min(ih - 1, y0 + 1);
 
-        const dx = csx - x0;
-        const dy = csy - y0;
+          const dx = csx - x0;
+          const dy = csy - y0;
 
-        const w00 = (1 - dx) * (1 - dy);
-        const w10 = dx * (1 - dy);
-        const w01 = (1 - dx) * dy;
-        const w11 = dx * dy;
+          const w00 = (1 - dx) * (1 - dy);
+          const w10 = dx * (1 - dy);
+          const w01 = (1 - dx) * dy;
+          const w11 = dx * dy;
 
-        const idx00 = (y0 * iw + x0) * 4;
-        const idx10 = (y0 * iw + x1) * 4;
-        const idx01 = (y1 * iw + x0) * 4;
-        const idx11 = (y1 * iw + x1) * 4;
+          const idx00 = (y0 * iw + x0) * 4;
+          const idx10 = (y0 * iw + x1) * 4;
+          const idx01 = (y1 * iw + x0) * 4;
+          const idx11 = (y1 * iw + x1) * 4;
 
-        let r = w00 * sData[idx00] + w10 * sData[idx10] + w01 * sData[idx01] + w11 * sData[idx11];
-        let g = w00 * sData[idx00 + 1] + w10 * sData[idx10 + 1] + w01 * sData[idx01 + 1] + w11 * sData[idx11 + 1];
-        let b = w00 * sData[idx00 + 2] + w10 * sData[idx10 + 2] + w01 * sData[idx01 + 2] + w11 * sData[idx11 + 2];
+          let r = w00 * sData[idx00] + w10 * sData[idx10] + w01 * sData[idx01] + w11 * sData[idx11];
+          let g = w00 * sData[idx00 + 1] + w10 * sData[idx10 + 1] + w01 * sData[idx01 + 1] + w11 * sData[idx11 + 1];
+          let b = w00 * sData[idx00 + 2] + w10 * sData[idx10 + 2] + w01 * sData[idx01 + 2] + w11 * sData[idx11 + 2];
 
-        // Apply document mode
-        if (activeMode === 'grayscale') {
-          const lum = 0.299 * r + 0.587 * g + 0.114 * b;
-          r = g = b = lum;
-        } else if (activeMode === 'high-contrast') {
-          let lum = 0.299 * r + 0.587 * g + 0.114 * b;
-          // Soft threshold S-curve / high-contrast filter
-          lum = lum > 170 ? 255 : lum < 85 ? 0 : ((lum - 85) / 85) * 255;
-          r = g = b = lum;
+          // Apply document mode
+          if (modeSnapshot === 'grayscale') {
+            const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+            r = g = b = lum;
+          } else if (modeSnapshot === 'high-contrast') {
+            let lum = 0.299 * r + 0.587 * g + 0.114 * b;
+            // Soft threshold S-curve / high-contrast filter
+            lum = lum > 170 ? 255 : lum < 85 ? 0 : ((lum - 85) / 85) * 255;
+            r = g = b = lum;
+          }
+
+          // Apply Brightness & Contrast adjustments
+          if (brightness !== 0) {
+            r += bOffset;
+            g += bOffset;
+            b += bOffset;
+          }
+          if (contrast !== 0) {
+            r = contrastFactor * (r - 128) + 128;
+            g = contrastFactor * (g - 128) + 128;
+            b = contrastFactor * (b - 128) + 128;
+          }
+
+          const oi = (y * W + x) * 4;
+          oData[oi] = Math.max(0, Math.min(255, Math.round(r)));
+          oData[oi + 1] = Math.max(0, Math.min(255, Math.round(g)));
+          oData[oi + 2] = Math.max(0, Math.min(255, Math.round(b)));
+          oData[oi + 3] = 255;
         }
-
-        // Apply Brightness & Contrast adjustments
-        if (brightness !== 0) {
-          r += bOffset;
-          g += bOffset;
-          b += bOffset;
-        }
-        if (contrast !== 0) {
-          r = contrastFactor * (r - 128) + 128;
-          g = contrastFactor * (g - 128) + 128;
-          b = contrastFactor * (b - 128) + 128;
-        }
-
-        const oi = (y * W + x) * 4;
-        oData[oi] = Math.max(0, Math.min(255, Math.round(r)));
-        oData[oi + 1] = Math.max(0, Math.min(255, Math.round(g)));
-        oData[oi + 2] = Math.max(0, Math.min(255, Math.round(b)));
-        oData[oi + 3] = 255;
       }
+
+      // Yield to pointer/input events so a newer request can cancel this render.
+      if (chunkEnd < H) await new Promise(resolve => setTimeout(resolve, 0));
     }
 
     if (requestId === renderRequestId) {
+      resultCanvas.width = W;
+      resultCanvas.height = H;
       resultCanvas.getContext('2d').putImageData(outputData, 0, 0);
       statusEl.textContent = `Output scan size: ${W} × ${H} px`;
+      exportJpgBtn.disabled = false;
+      exportPdfBtn.disabled = false;
       window.__photoToScanDebug.completed++;
+      window.__photoToScanDebug.lastCommittedRequestId = requestId;
+      window.__photoToScanDebug.lastCommittedBrightness = brightness;
     }
   }
 
