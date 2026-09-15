@@ -3,7 +3,15 @@
   const video=$('video'),preview=$('preview');
   if(!video||!preview)return;
 
-  let faceImage=null,faceVideo=null,visionFiles=null,liveTimer=null,liveBusy=false,autoBusy=false;
+  let faceImage=null,faceImagePromise=null,faceVideo=null,visionFiles=null,liveTimer=null,liveBusy=false,autoBusy=false;
+
+  function withTimeout(promise,ms,message){
+    let timer;
+    return Promise.race([
+      promise,
+      new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error(message)),ms)})
+    ]).finally(()=>clearTimeout(timer));
+  }
 
   async function vision(){
     if(visionFiles)return visionFiles;
@@ -15,9 +23,12 @@
 
   async function imageLandmarker(){
     if(faceImage)return faceImage;
-    const {mod,files}=await vision();
-    faceImage=await mod.FaceLandmarker.createFromOptions(files,{baseOptions:{modelAssetPath:'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task'},runningMode:'IMAGE',numFaces:1,minFaceDetectionConfidence:.5,minFacePresenceConfidence:.5});
-    return faceImage;
+    if(!faceImagePromise)faceImagePromise=(async()=>{
+      const {mod,files}=await vision();
+      faceImage=await mod.FaceLandmarker.createFromOptions(files,{baseOptions:{modelAssetPath:'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task'},runningMode:'IMAGE',numFaces:1,minFaceDetectionConfidence:.5,minFacePresenceConfidence:.5});
+      return faceImage;
+    })().catch(error=>{faceImagePromise=null;throw error});
+    return faceImagePromise;
   }
 
   async function videoLandmarker(){
@@ -34,6 +45,19 @@
     return{minX,maxX,minY,maxY,cx,faceH,eyeY,tilt};
   }
 
+  function profileForFraming(framing){
+    // Face landmarks stop near the forehead rather than the top of the hair.
+    // The biometric target is calibrated so the estimated full head occupies
+    // about 80–85% of the image with a small top margin.
+    if(framing==='us')return {targetFace:.43,targetEye:.44,liveMin:.22,liveMax:.48,tolerance:.035,summary:'Face positioned for the 2×2 inch head-size range with visible hair and a small top margin.'};
+    if(framing==='canada')return {targetFace:.46,targetEye:.43,liveMin:.25,liveMax:.54,tolerance:.035,summary:'Face positioned for the Canada 50 × 70 mm head-size range with visible hair and a small top margin.'};
+    if(framing==='custom')return {targetFace:.52,targetEye:.44,liveMin:.26,liveMax:.56,tolerance:.04,summary:'Face positioned using general passport-photo guidance. Verify the requirements for your custom size.'};
+    return {targetFace:.64,targetEye:.48,liveMin:.34,liveMax:.64,tolerance:.04,topMargin:.04,summary:'Face positioned for a close biometric crop while keeping the full hairline and a small clear margin above it.'};
+  }
+
+  function framingProfile(){return profileForFraming(window.getPassportFormat?.().framing);}
+  window.passportAutoPositionProfile=profileForFraming;
+
   function setLive(text,state='warn'){
     const el=$('liveStatus');if(!el)return;
     el.textContent=text;el.className=`live-status ${state}`;
@@ -47,7 +71,8 @@
       if(faces.length!==1){setLive(faces.length?'Only one face should be visible':'Move your face into the guide','warn');return}
       const m=metrics(faces[0],video.videoWidth,video.videoHeight),notes=[];
       if(Math.abs(m.cx-.5)>.09)notes.push(m.cx<.5?'move right':'move left');
-      if(m.faceH<.28)notes.push('move closer'); else if(m.faceH>.58)notes.push('move farther back');
+      const profile=framingProfile();
+      if(m.faceH<profile.liveMin)notes.push('move closer'); else if(m.faceH>profile.liveMax)notes.push('move farther back');
       if(m.tilt>7)notes.push('straighten your head');
       if(m.eyeY<.25)notes.push('move slightly down'); else if(m.eyeY>.48)notes.push('move slightly up');
       if(notes.length)setLive(notes.slice(0,2).join(' · '),'warn'); else setLive('Framing looks good ✓','pass');
@@ -76,27 +101,35 @@
     el.value=String(Math.round(v));el.dispatchEvent(new Event('input',{bubbles:true}));
   }
 
-  async function detectPreview(){
-    const lmkr=await imageLandmarker(),img=await canvasImage(preview),det=lmkr.detect(img),faces=det.faceLandmarks||[];
+  async function detectPreview(onStage){
+    const lmkr=await withTimeout(imageLandmarker(),20000,'The face model took too long to load. Check your connection and tap Auto-position face again.');
+    onStage?.('Detecting your face…');
+    const img=await canvasImage(preview),det=lmkr.detect(img),faces=det.faceLandmarks||[];
     if(faces.length!==1)throw Error('Exactly one clear face is required for automatic positioning.');
     return metrics(faces[0],preview.width,preview.height);
   }
 
   $('autoPosition')?.addEventListener('click',async()=>{
     if(autoBusy)return;autoBusy=true;
-    const b=$('autoPosition'),msg=$('autoPositionStatus');b.disabled=true;b.textContent='Positioning…';
+    const b=$('autoPosition'),msg=$('autoPositionStatus');b.disabled=true;b.textContent='Positioning…';msg.textContent='Loading the on-device face model…';
     try{
-      let m=await detectPreview();
-      // Face landmarks omit the crown of the hair. This calibrated target aims
-      // for the requested 80–85% full-head height without cropping the crown.
-      const zoom=$('zoom'),current=Number(zoom.value),targetFace=.56;
-      fireRange('zoom',current*(targetFace/Math.max(.01,m.faceH)));
-      await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
-      m=await detectPreview();
-      fireRange('xpos',Number($('xpos').value)+(.5-m.cx)*400);
-      // 50% moves the enlarged crop down to retain about 30px above the hair.
-      fireRange('ypos',Number($('ypos').value)+(.50-m.eyeY)*400);
-      msg.textContent='Face positioned automatically to aim for 80–85% full-head height with a small margin above the hair. Review the preview and run checks.';
+      // Allow Safari to paint the busy state before face detection blocks the
+      // main thread briefly. One measured adjustment plus one verification is
+      // substantially faster than repeatedly running the model on mobile.
+      await new Promise(r=>setTimeout(r,50));
+      const profile=framingProfile(),m=await detectPreview(text=>{msg.textContent=text}),zoom=$('zoom'),current=Number(zoom.value);
+      msg.textContent='Applying the passport framing…';
+      fireRange('zoom',current*(profile.targetFace/Math.max(.01,m.faceH)));
+      const appliedScale=Number(zoom.value)/Math.max(1,current);
+      const predictedCx=.5+(m.cx-.5)*appliedScale,predictedEye=.5+(m.eyeY-.5)*appliedScale;
+      fireRange('xpos',Number($('xpos').value)+(.5-predictedCx)*400);
+      const eyeShift=profile.targetEye-predictedEye;
+      const estimatedCrown=m.minY-m.faceH*.14;
+      const predictedCrown=.5+(estimatedCrown-.5)*appliedScale;
+      const crownShift=profile.topMargin?profile.topMargin-predictedCrown:-1;
+      fireRange('ypos',Number($('ypos').value)+Math.max(eyeShift,crownShift)*400);
+      await new Promise(r=>requestAnimationFrame(r));
+      msg.textContent=profile.summary+' Review the hairline and run checks.';
     }catch(e){console.error(e);msg.textContent=e.message||'Automatic positioning could not run.';}
     finally{autoBusy=false;b.disabled=false;b.textContent='Auto-position face';}
   });
