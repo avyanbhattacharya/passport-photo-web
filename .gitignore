@@ -7,3 +7,4 @@ test-results/
 public/
 dist/
 .astro/
+release-readiness.json

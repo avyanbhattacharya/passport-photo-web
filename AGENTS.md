@@ -7,7 +7,7 @@ Read `docs/README.md`, `BRAND.md`, `docs/04-workflow/agent-collaboration.md`, th
 - Implement only an owner-approved task brief. An idea or backlog entry is not implementation approval.
 - Work from current `main` on a dedicated feature branch and submit a PR. Preserve unrelated changes and the immutable `baseline/clean-local-tools-ci-v1` reference.
 - Jules implements and addresses review feedback. Jules must not approve its own work, merge PRs, push directly to `main`, or change production/domain/access settings.
-- Codex reviews the current PR commit and test evidence. The owner tests the preview and gives final release approval for that version. A green pipeline or an automated review is not owner approval.
+- Codex reviews the current PR commit and test evidence. The owner gives final release approval for that version. Follow the risk-based release evidence policy: a full manual rerun is not the default, but physical device and native-browser checks remain required when the release report identifies them. A green pipeline or an automated review is not owner approval.
 - Keep experimental AI branches separate unless the owner explicitly approves promotion.
 
 ## Implementation expectations

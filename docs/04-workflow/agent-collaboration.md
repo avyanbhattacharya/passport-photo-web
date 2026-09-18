@@ -32,14 +32,30 @@ Until the trigger is configured, review requires an active Codex session. Do not
 5. CI and Cloudflare preview deployment run. Record the PR head SHA, CI results, deployment commit and actual preview link. Preview deployment is not production approval.
 6. Codex reviews scope, code, privacy, failure behavior, design consistency, accessibility and test evidence for that SHA. Check exported results rather than trusting button clicks alone. Identify which manual or physical-device checks remain.
 7. If changes are needed, Codex submits one consolidated review mentioning `@Jules`. Jules acknowledges it, addresses the findings and pushes fixes to the same PR branch. New commits invalidate the previous review result and trigger another review once that trigger is installed.
-8. After review passes and required CI is green, Codex prepares a release summary: app behavior, limitations, preview URL, exact commit, test evidence and a short manual test checklist. Deliver it through the active conversation; automatic delivery through GitHub notifications is a future integration, subject to the owner's notification settings.
-9. The owner tests the preview and explicitly approves release. Record approval against the reviewed head SHA. New substantive changes require another preview approval; any new commit requires renewed verification before merge.
+8. After review passes and required CI is green, Codex prepares a release summary: app behavior, limitations, preview URL, exact commit, test evidence and only the manual checks required by the release-risk policy. Deliver it through the active conversation; automatic delivery through GitHub notifications is a future integration, subject to the owner's notification settings.
+9. The owner explicitly approves release against the reviewed head SHA. A full manual rerun is not the default: when the release report requires no physical check, approval may rely on the reviewed automated evidence. New substantive changes require renewed verification before merge.
 10. Codex checks that the head still matches approval, required checks pass, conflicts are resolved and production conventions are preserved. Merge through the PR without bypassing repository protections. If integration changes are needed, return to review before release.
 11. Codex verifies the production route, expected content/assets and deployed version where available. Record the merge SHA, CI/deployment evidence and verification result. If publication fails, report the failure; do not equate merge success with a live release.
 
 ## Review and correction rules
 
 Use at most three correction rounds per approved task. After round three, stop the automated loop and provide one consolidated blocker report. Stop sooner for conflicting requirements, repeated failures without progress, security/privacy changes, new dependencies/services with material impact, or requests to expand scope.
+
+## Risk-based release evidence
+
+Every public route has a small tool contract: its route, visible identity, deep browser test, risk class and visual-review participation. The cross-browser smoke test reads that contract instead of maintaining a second unstructured route list.
+
+The release-readiness job converts changed files and affected contracts into a GitHub Actions summary and a small artifact. It recommends one or more labels without silently applying them:
+
+- `risk:standard` — green automated evidence and review are normally sufficient; no device exercise is required.
+- `risk:visual` — inspect an intentional visual baseline change or visual-review packet. This is not a request to retest the workflow.
+- `risk:new-tool` — perform one short first-release check of the new user journey.
+- `risk:device-input` — exercise the real device file picker, camera, or permission path once in the release batch.
+- `risk:native-output` — exercise the browser-native print/output dialog once in the release batch.
+
+Visual regression uses deterministic desktop and mobile screenshots. Approved reference images are kept in the repository; comparisons run in CI. A reference image is refreshed only after an intentional design change and review. Until an initial reference exists, CI captures a visual-review packet rather than pretending a comparison occurred.
+
+A release batch can group several green PRs. CI still runs on every PR. The final preview approval is against one exact release-candidate SHA, and each device-dependent capability is tested once for that batch. A substantive new commit invalidates the batch evidence. This keeps human testing focused on things automated browsers cannot faithfully prove, such as the system print dialog, camera permissions, and real iPhone file selection.
 
 Use stable finding identifiers such as R1-01. For each finding provide severity, file/location, observed problem, requested outcome and a concrete verification condition. Separate blockers from optional suggestions. Acknowledge valid disagreement and do not repeatedly request the same fix without new evidence.
 

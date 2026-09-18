@@ -1,0 +1,11 @@
+Date,Category,Amount,Note
+2026-01-01,Food,120.00,Groceries
+2026-01-03,Travel,40.00,Train
+2026-01-04,Food,75.00,Cafe
+2026-02-01,Food,146.00,Groceries
+2026-02-03,Home,84.00,Repair
+2026-02-04,Food,75.00,Cafe
+2026-03-01,Home,,Missing invoice
+2026-03-03,Travel,40.00,Train
+2026-03-03,Travel,40.00,Train
+2026-03-08,Food,2000.00,Unusual purchase

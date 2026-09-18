@@ -1,0 +1,96 @@
+---
+import '../../styles/global.css';
+import '../../styles/sheetlocal.css';
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="SheetLocal analyzes CSV files on your device. Your files never leave your machine." />
+    <link rel="canonical" href="https://cleanlocaltools.com/sheetlocal/" />
+    <title>SheetLocal | Private CSV analysis in your browser</title>
+    <script is:inline>document.documentElement.dataset.theme=localStorage.getItem('clean-local-theme')||'dark';</script>
+  </head>
+  <body class="sheetlocal-page">
+    <header class="sheetlocal-header">
+      <div class="sheetlocal-wrap sheetlocal-header-inner">
+        <a class="brand" href="/" aria-label="Clean Local Tools home"><span aria-hidden="true"></span>Clean Local Tools</a>
+        <nav aria-label="SheetLocal navigation">
+          <a href="/">All tools</a>
+          <button class="theme-toggle" type="button" aria-label="Switch color theme" title="Switch color theme"><span aria-hidden="true">☼</span></button>
+        </nav>
+      </div>
+    </header>
+
+    <main class="sheetlocal-wrap">
+      <section class="sheetlocal-hero" aria-labelledby="sheetlocal-title">
+        <div>
+          <p class="eyebrow">Files &amp; data</p>
+          <h1 id="sheetlocal-title">Understand a spreadsheet without uploading it.</h1>
+          <p>Open a CSV, inspect what is inside, and answer practical questions with visible calculations. Your file stays in this browser tab.</p>
+        </div>
+        <aside class="sheetlocal-privacy" aria-label="Your file stays on this device">
+          <span aria-hidden="true">▣</span>
+          <div><strong>Your files never leave your machine.</strong><small>Nothing is uploaded for processing.</small></div>
+        </aside>
+      </section>
+
+      <section class="sheetlocal-workspace" aria-label="SheetLocal workspace">
+        <div class="sheetlocal-import" id="importPanel">
+          <label class="sheetlocal-drop" for="csvFile">
+            <span class="sheetlocal-file-icon" aria-hidden="true">⌁</span>
+            <strong>Choose a CSV file</strong>
+            <span>Up to 5 MB. The file is read locally and is never uploaded.</span>
+            <input id="csvFile" type="file" accept=".csv,.tsv,text/csv,text/tab-separated-values" />
+          </label>
+          <div class="sheetlocal-import-actions">
+            <button class="sheetlocal-text-button" id="sampleButton" type="button">Try a sample budget</button>
+            <span id="importStatus" role="status" aria-live="polite"></span>
+          </div>
+          <p class="sheetlocal-limit">CSV is supported first. Excel support and optional local language assistance are planned only after this core workflow is proven.</p>
+        </div>
+
+        <div class="sheetlocal-data" id="dataPanel" hidden>
+          <div class="sheetlocal-data-head">
+            <div><p class="sheetlocal-kicker">LOCAL DATASET</p><h2 id="datasetName">Spreadsheet</h2></div>
+            <button class="sheetlocal-text-button" id="replaceButton" type="button">Choose another file</button>
+          </div>
+
+          <div class="sheetlocal-profile" id="profileCards" aria-label="Spreadsheet profile"></div>
+
+          <section class="sheetlocal-question" aria-labelledby="question-title">
+            <div class="sheetlocal-question-head"><div><h2 id="question-title">What would you like to check?</h2><p>Choose a guided analysis or describe one in plain language.</p></div></div>
+            <div class="sheetlocal-actions" role="group" aria-label="Guided spreadsheet analyses">
+              <button type="button" data-analysis="overview">Overview</button>
+              <button type="button" data-analysis="top">Top categories</button>
+              <button type="button" data-analysis="trend">Compare periods</button>
+              <button type="button" data-analysis="duplicates">Find duplicates</button>
+              <button type="button" data-analysis="outliers">Unusual values</button>
+              <button type="button" data-analysis="missing">Missing data</button>
+            </div>
+            <form class="sheetlocal-ask" id="askForm">
+              <label class="sheetlocal-visually-hidden" for="questionInput">Ask about this spreadsheet</label>
+              <input id="questionInput" autocomplete="off" placeholder="Example: What are the biggest categories?" />
+              <button type="submit">Analyze</button>
+            </form>
+            <p class="sheetlocal-help" id="questionHelp">SheetLocal recognizes the guided questions above. It shows the calculation behind each answer.</p>
+          </section>
+
+          <section class="sheetlocal-results" aria-labelledby="results-title">
+            <div class="sheetlocal-results-head"><div><p class="sheetlocal-kicker">RESULT</p><h2 id="results-title">Choose an analysis</h2></div><button id="downloadReport" type="button" hidden>Download report</button></div>
+            <div id="resultBody" aria-live="polite"><p class="sheetlocal-empty">Your results will appear here. Nothing is changed in the original file.</p></div>
+          </section>
+
+          <section class="sheetlocal-preview" aria-labelledby="preview-title">
+            <div class="sheetlocal-preview-head"><h2 id="preview-title">Data preview</h2><span id="previewCount"></span></div>
+            <div class="sheetlocal-table-wrap"><table><thead id="previewHead"></thead><tbody id="previewBody"></tbody></table></div>
+          </section>
+        </div>
+      </section>
+    </main>
+    <script is:inline src="/sheetlocal/app.js"></script>
+    <script is:inline>document.querySelector('.theme-toggle')?.addEventListener('click',()=>{const next=document.documentElement.dataset.theme==='dark'?'light':'dark';document.documentElement.dataset.theme=next;localStorage.setItem('clean-local-theme',next);});</script>
+  </body>
+</html>

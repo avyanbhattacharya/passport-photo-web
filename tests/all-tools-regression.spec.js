@@ -1,27 +1,7 @@
 const { test, expect } = require('@playwright/test');
+const { toolContracts } = require('./tool-contracts');
 
-const tools = [
-  ['/clean-html-printer/', /Clean HTML Printer/i],
-  ['/', /Useful file tools/i],
-  ['/passport-photo/', /Passport Photo/i],
-  ['/japa-counter/', /Japa Counter/i],
-  ['/japa-counter/tap.html', /Japa Counter/i],
-  ['/compress-pdf/', /Compress PDF/i],
-  ['/merge-pdf/', /Merge PDF/i],
-  ['/resize-image/', /Resize & Compress Image/i],
-  ['/clean-pdf-printer/', /Clean PDF Printer/i],
-  ['/document-flattener/', /Document Flattener/i],
-  ['/photo-to-scan/', /Photo to Scan/i],
-  ['/image-to-pdf/', /Image to PDF/i],
-  ['/split-pdf/', /Split PDF/i],
-  ['/heic-to-jpg/', /HEIC to JPG/i],
-  ['/remove-photo-metadata/', /Remove Photo Metadata/i],
-  ['/qr-code-maker/', /QR Code Maker/i],
-  ['/about/', /Useful tools without surrendering your files/i],
-  ['/principles/', /Principles that keep the promise honest/i]
-];
-
-for (const [route, heading] of tools) {
+for (const { route, heading } of toolContracts) {
   test(`${route} cross-browser smoke`, async ({ page }) => {
     const pageErrors = [];
     const brokenLocal = [];

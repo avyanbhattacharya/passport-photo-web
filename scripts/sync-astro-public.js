@@ -17,7 +17,7 @@ const directories = [
   'about', 'assets', 'clean-html-printer', 'clean-pdf-printer', 'compress-pdf', 'docs',
   'document-flattener', 'heic-to-jpg', 'image-to-pdf', 'japa-counter', 'merge-pdf',
   'passport-photo', 'photo-to-scan', 'principles', 'qr-code-maker', 'remove-photo-metadata',
-  'resize-image', 'split-pdf'
+  'resize-image', 'sheetlocal', 'split-pdf'
 ];
 const files = ['CNAME', 'google5f4708aeb39de005.html', 'manifest.webmanifest', 'robots.txt', 'sitemap.xml', 'sw.js', 'VERSION'];
 

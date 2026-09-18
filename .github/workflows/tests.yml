@@ -21,6 +21,8 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
@@ -36,6 +38,16 @@ jobs:
         run: npm run test:static:hygiene
       - name: HTML URL boundary
         run: node --test tests/static/html-url.test.js
+      - name: Release readiness summary
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: npm run release:readiness
+      - name: Upload release readiness report
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-readiness
+          path: release-readiness.json
+          retention-days: 7
 
   chromium:
     name: Deep Chromium
@@ -67,6 +79,19 @@ jobs:
         run: npm run test:chromium:pdf
       - name: Image and catalog deep tests
         run: npm run test:chromium:image
+      - name: Visual regression
+        run: npm run test:visual
+      - name: Generate visual review packet
+        if: success()
+        run: npm run test:visual:reference
+      - name: Upload visual review packet
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-review-packet
+          path: tests/visual-regression.spec.js-snapshots/
+          if-no-files-found: ignore
+          retention-days: 7
       - name: Upload Chromium report on failure
         if: failure()
         uses: actions/upload-artifact@v4

@@ -1,0 +1,39 @@
+<!doctype html>
+<!-- Generated from docs/03-architecture/sheetlocal.md by scripts/build-docs.js. Do not edit directly. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#ffffff">
+<meta name="description" content="Local CSV analysis architecture and trust boundaries.">
+<meta name="robots" content="noindex,follow,noarchive">
+<link rel="canonical" href="https://cleanlocaltools.com/docs/architecture/sheetlocal/">
+<meta property="og:title" content="SheetLocal Architecture | Clean Local Tools">
+<meta property="og:description" content="Local CSV analysis architecture and trust boundaries.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://cleanlocaltools.com/docs/architecture/sheetlocal/">
+<meta property="og:site_name" content="Clean Local Tools">
+<title>SheetLocal Architecture | Clean Local Tools</title>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"SheetLocal Architecture","description":"Local CSV analysis architecture and trust boundaries.","url":"https://cleanlocaltools.com/docs/architecture/sheetlocal/","isPartOf":{"@type":"WebSite","name":"Clean Local Tools","url":"https://cleanlocaltools.com/"}}</script>
+<link rel="stylesheet" href="/assets/site.css?v=a78ae1a98127">
+<link rel="stylesheet" href="/assets/docs.css?v=ab6cc24636dd">
+</head>
+<body class="docs-page docs-technical">
+<header class="topbar"><div class="wrap"><div class="brand"><a href="/">Clean Local Tools</a></div><nav class="topnav" aria-label="Primary"><a class="toplink" href="/#all-tools">All tools</a><a class="toplink" href="/about/">About</a><a class="toplink" href="/principles/">Principles</a></nav></div></header>
+<main class="doc-main"><div class="wrap"><article class="doc-article"><div class="doc-kicker">Architecture</div><aside class="doc-status"><strong>Technical documentation</strong><span>This page records architecture and experimental direction. It is not a user-facing tool.</span></aside><div class="doc-content"><h1 id="sheetlocal-architecture">SheetLocal Architecture</h1>
+<p>SheetLocal is a browser-local tool for understanding CSV and TSV files. It is deliberately useful before it is ambitious: the first release profiles a selected file and runs a small set of explicit analyses without uploading the file or requiring a model download.</p>
+<h2 id="current-scope">Current scope</h2>
+<ul><li>A user selects a CSV or TSV file, up to 5 MB.</li><li>A short-lived Web Worker parses the text away from the UI thread.</li><li>The application infers simple text, number, and ISO-style date columns, then shows a preview and profile.</li><li>Guided actions provide an overview, top categories, period comparison, duplicate rows, unusual numeric values, and missing-data counts.</li><li>A report is assembled in the browser and downloaded locally. SheetLocal never writes to the original selected file.</li></ul>
+<p>CSV comes first because it is the smallest dependable foundation. Excel support, editing, and language assistance are not implied by this first route.</p>
+<h2 id="privacy-boundary">Privacy boundary</h2>
+<p>The selected file is handled only in browser memory. The SheetLocal application makes no API request, has no account, analytics, or remote model download, and does not send spreadsheet contents to a server. The built-in example data is embedded in the application so it also works without a network request.</p>
+<p>The product claim is therefore specific: <strong>your file never leaves your machine while using SheetLocal.</strong> It does not claim that every possible browser environment is offline-capable unless the built static site has been loaded and verified in that environment.</p>
+<h2 id="guided-analysis-before-an-llm">Guided analysis before an LLM</h2>
+<p>The first release maps a narrow vocabulary to approved deterministic analyses. For example, “find missing values” selects the missing-data action; it does not execute arbitrary SQL, generate code, or guess at an opaque calculation. This keeps results reproducible, constrains memory and performance, and lets people understand what was computed.</p>
+<p>A tiny local language layer may later explain already-computed results, but it must remain optional. The spreadsheet profile and every guided action must continue to work when no model can run on the device. There is no cloud fallback.</p>
+<h2 id="verification">Verification</h2>
+<p>Static checks enforce the local-only architecture, the route and catalog entries, and the handbook publication. Browser coverage imports a CSV fixture, verifies the profile and guided results, tests the duplicate path, and confirms reports download locally. Existing cross-browser route smoke tests include <code>/sheetlocal/</code>.</p>
+<p>When changing this tool, retain its hard boundaries: no network transport of working files, no silent model download, bounded input size, and evidence visible alongside analysis results.</p></div><nav class="doc-related" aria-label="Related pages"><a href="/">Home</a><a href="/about/">Mission &amp; vision</a><a href="/principles/">Principles</a></nav></article></div></main>
+<footer><div class="wrap site-footer-row"><span>© 2026 Clean Local Tools · Your files never leave your machine.</span><nav class="site-footer-nav" aria-label="Footer"><a class="toplink" href="/about/">About</a><a class="toplink" href="/principles/">Principles</a></nav></div></footer>
+</body>
+</html>

@@ -1,0 +1,71 @@
+@layer sheetlocal {
+  .sheetlocal-page { min-width:320px; min-height:100vh; background:var(--bg); color:var(--fg); }
+  .sheetlocal-header { border-bottom:1px solid var(--border); background:var(--header-bg); backdrop-filter:blur(16px) saturate(135%); }
+  .sheetlocal-wrap { width:min(1120px,calc(100% - 48px)); margin-inline:auto; }
+  .sheetlocal-header-inner { min-height:70px; display:flex; align-items:center; justify-content:space-between; gap:1rem; }
+  .sheetlocal-header nav { display:flex; align-items:center; gap:1rem; }
+  .sheetlocal-header nav>a { color:var(--fg-muted); font-size:.88rem; }
+  .sheetlocal-header nav>a:hover { color:var(--fg); }
+  .sheetlocal-hero { display:grid; grid-template-columns:minmax(0,1fr) minmax(16rem,.55fr); align-items:end; gap:2rem; padding:clamp(3rem,7vw,5.5rem) 0 2.4rem; }
+  .sheetlocal-hero h1 { max-width:45rem; margin-top:1.1rem; font-size:clamp(2.3rem,5vw,4.4rem); background:linear-gradient(120deg,var(--accent),var(--accent-2) 52%,var(--accent-3)); color:transparent; background-clip:text; -webkit-background-clip:text; }
+  .sheetlocal-hero p:not(.eyebrow) { max-width:42rem; margin-top:1.2rem; font-size:1.08rem; }
+  .sheetlocal-privacy,.sheetlocal-workspace,.sheetlocal-question,.sheetlocal-results,.sheetlocal-preview { border:1px solid var(--border); border-radius:1.25rem; background:var(--glass); backdrop-filter:blur(20px) saturate(140%); }
+  .sheetlocal-privacy { display:flex; align-items:flex-start; gap:.85rem; padding:1.15rem; }
+  .sheetlocal-privacy>span { display:grid; place-items:center; flex:0 0 auto; width:2.2rem; height:2.2rem; border-radius:.7rem; background:var(--glass-strong); color:var(--accent); font-size:1.25rem; }
+  .sheetlocal-privacy strong,.sheetlocal-privacy small { display:block; }
+  .sheetlocal-privacy strong { font-size:.94rem; }
+  .sheetlocal-privacy small { margin-top:.25rem; color:var(--fg-muted); font-size:.8rem; line-height:1.4; }
+  .sheetlocal-workspace { margin-bottom:4rem; overflow:hidden; }
+  .sheetlocal-import { padding:clamp(1.4rem,4vw,2.7rem); }
+  .sheetlocal-drop { display:grid; place-items:center; min-height:15rem; padding:1.5rem; border:1px dashed color-mix(in srgb,var(--accent) 55%,var(--border)); border-radius:1rem; background:color-mix(in srgb,var(--glass-strong) 72%,transparent); text-align:center; cursor:pointer; }
+  .sheetlocal-drop:hover { border-color:var(--accent); }
+  .sheetlocal-drop strong { margin-top:.75rem; font-size:1.15rem; }
+  .sheetlocal-drop span:not(.sheetlocal-file-icon) { max-width:28rem; margin-top:.4rem; color:var(--fg-muted); font-size:.9rem; line-height:1.5; }
+  .sheetlocal-drop input { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; clip-path:inset(50%); }
+  .sheetlocal-file-icon { display:grid; place-items:center; width:3rem; height:3rem; border-radius:1rem; background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 25%,transparent),color-mix(in srgb,var(--accent-2) 25%,transparent)); color:var(--accent); font-size:1.7rem; }
+  .sheetlocal-import-actions,.sheetlocal-data-head,.sheetlocal-results-head,.sheetlocal-preview-head { display:flex; align-items:center; justify-content:space-between; gap:1rem; }
+  .sheetlocal-import-actions { margin-top:1rem; }
+  .sheetlocal-text-button { padding:.35rem 0; border:0; background:transparent; color:var(--accent); font:inherit; font-size:.87rem; font-weight:700; cursor:pointer; }
+  .sheetlocal-text-button:hover { color:var(--fg); }
+  #importStatus { color:var(--fg-muted); font-size:.82rem; text-align:right; }
+  .sheetlocal-limit,.sheetlocal-help { margin-top:1rem; color:var(--fg-muted); font-size:.82rem; line-height:1.5; }
+  .sheetlocal-data { padding:clamp(1rem,3vw,2rem); }
+  .sheetlocal-data-head { margin-bottom:1.3rem; }
+  .sheetlocal-data h2,.sheetlocal-question h2,.sheetlocal-results h2,.sheetlocal-preview h2 { font-size:1.22rem; }
+  .sheetlocal-kicker { color:var(--accent); font-size:.7rem; font-weight:750; letter-spacing:.09em; }
+  .sheetlocal-profile { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:.75rem; }
+  .sheetlocal-profile-card { min-width:0; padding:1rem; border:1px solid var(--border); border-radius:.9rem; background:var(--glass-strong); }
+  .sheetlocal-profile-card strong,.sheetlocal-profile-card span { display:block; }
+  .sheetlocal-profile-card strong { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:1.2rem; }
+  .sheetlocal-profile-card span { margin-top:.25rem; color:var(--fg-muted); font-size:.78rem; }
+  .sheetlocal-question,.sheetlocal-results,.sheetlocal-preview { margin-top:1.25rem; padding:1.25rem; }
+  .sheetlocal-question-head p { margin-top:.3rem; font-size:.88rem; }
+  .sheetlocal-actions { display:flex; flex-wrap:wrap; gap:.6rem; margin-top:1rem; }
+  .sheetlocal-actions button { padding:.58rem .75rem; border:1px solid var(--border); border-radius:999px; background:var(--glass-strong); color:var(--fg); font:inherit; font-size:.83rem; cursor:pointer; }
+  .sheetlocal-actions button:hover,.sheetlocal-actions button[aria-pressed="true"] { border-color:var(--accent); color:var(--accent); }
+  .sheetlocal-ask { display:grid; grid-template-columns:1fr auto; gap:.65rem; margin-top:1rem; }
+  .sheetlocal-ask input { min-width:0; padding:.78rem .9rem; border:1px solid var(--border); border-radius:.7rem; background:var(--glass-strong); color:var(--fg); font:inherit; }
+  .sheetlocal-ask input:focus { outline:2px solid color-mix(in srgb,var(--accent) 65%,transparent); outline-offset:2px; }
+  .sheetlocal-ask button,.sheetlocal-results-head button { padding:.75rem 1rem; border:0; border-radius:.7rem; background:var(--fg); color:var(--on-accent); font:inherit; font-size:.86rem; font-weight:700; cursor:pointer; }
+  .sheetlocal-results-head { align-items:start; }
+  .sheetlocal-results-head button { background:var(--accent); color:var(--on-accent); }
+  .sheetlocal-empty { margin-top:.85rem; font-size:.92rem; }
+  .sheetlocal-answer { margin-top:.9rem; }
+  .sheetlocal-answer>p { color:var(--fg); font-size:1rem; }
+  .sheetlocal-evidence { display:grid; grid-template-columns:repeat(auto-fit,minmax(11rem,1fr)); gap:.65rem; margin-top:1rem; }
+  .sheetlocal-evidence div { padding:.75rem; border:1px solid var(--border); border-radius:.7rem; background:var(--glass-strong); }
+  .sheetlocal-evidence span,.sheetlocal-evidence strong { display:block; }
+  .sheetlocal-evidence span { color:var(--fg-muted); font-size:.72rem; }
+  .sheetlocal-evidence strong { margin-top:.2rem; font-size:.87rem; }
+  .sheetlocal-result-table { width:100%; margin-top:1rem; border-collapse:collapse; font-size:.85rem; }
+  .sheetlocal-result-table th,.sheetlocal-result-table td { padding:.58rem .45rem; border-bottom:1px solid var(--border); text-align:left; }
+  .sheetlocal-result-table th { color:var(--fg-muted); font-size:.72rem; text-transform:uppercase; letter-spacing:.04em; }
+  .sheetlocal-preview-head span { color:var(--fg-muted); font-size:.8rem; }
+  .sheetlocal-table-wrap { max-height:22rem; margin-top:.85rem; overflow:auto; border:1px solid var(--border); border-radius:.75rem; }
+  .sheetlocal-table-wrap table { width:100%; border-collapse:collapse; font-size:.83rem; }
+  .sheetlocal-table-wrap th,.sheetlocal-table-wrap td { min-width:8rem; max-width:16rem; padding:.62rem .7rem; border-bottom:1px solid var(--border); color:var(--tool-ink,var(--fg)); overflow:hidden; text-align:left; text-overflow:ellipsis; white-space:nowrap; }
+  .sheetlocal-table-wrap th { position:sticky; top:0; background:var(--bg-elevated); color:var(--fg); font-size:.74rem; }
+  .sheetlocal-visually-hidden { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
+  @media(max-width:760px) { .sheetlocal-wrap { width:min(100% - 28px,1120px); } .sheetlocal-header-inner { min-height:60px; } .sheetlocal-hero { grid-template-columns:1fr; padding-top:3.4rem; } .sheetlocal-profile { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+  @media(max-width:520px) { .sheetlocal-hero h1 { font-size:clamp(2.25rem,12vw,3.3rem); } .sheetlocal-ask { grid-template-columns:1fr; } .sheetlocal-ask button { width:100%; } .sheetlocal-data-head,.sheetlocal-results-head { align-items:flex-start; flex-direction:column; } .sheetlocal-results-head button { width:100%; } }
+}
