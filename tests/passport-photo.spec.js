@@ -82,21 +82,58 @@ test('630 by 810 passport download is JPEG and stays within 250 KB', async ({ pa
   expect(dimensions).toEqual([630, 810]);
 });
 
-test('auto-position reserves hairline headroom rather than filling the crop', async ({ page }) => {
+test('India auto-position restores hair from a tall source and exports the headroom', async ({ page }) => {
+  await page.route('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1/+esm', route => route.fulfill({
+    contentType: 'application/javascript',
+    headers: { 'access-control-allow-origin': '*' },
+    body: `export const FilesetResolver = { forVisionTasks: async () => ({}) };
+      export const FaceLandmarker = { createFromOptions: async () => ({ detect: () => {
+        const face = Array.from({ length: 264 }, () => ({ x: .5, y: .42 }));
+        face[0] = { x: .35, y: .30 };
+        face[1] = { x: .65, y: .70 };
+        face[33] = { x: .42, y: .44 };
+        face[263] = { x: .58, y: .44 };
+        return { faceLandmarks: [face] };
+      } }) };`
+  }));
   await page.goto('/passport-photo/');
-  const behavior = await page.evaluate(async () => (await (await fetch('/assets/advanced.js')).text()));
-
-  // Face landmarks omit the crown, so these calibrated targets aim for the
-  // required 80–85% full-head height while retaining a hair margin.
-  expect(behavior).toContain('targetFace:.64');
-  expect(behavior).toContain('targetEye:.48');
-  expect(behavior).toContain('estimatedCrown=m.minY-m.faceH*.14');
-  expect(behavior).toContain("msg.textContent='Loading the on-device face model…'");
-  expect(behavior).toContain("msg.textContent='Applying the passport framing…'");
-  expect(behavior).toContain('withTimeout(imageLandmarker(),20000');
-  expect(behavior).toContain("m=await detectPreview(text=>{msg.textContent=text})");
-  expect(behavior).not.toContain('verified=await detectPreview');
-  expect(behavior).not.toContain('for(let pass=0;pass<3;pass++)');
+  const photo = `<svg xmlns="http://www.w3.org/2000/svg" width="630" height="1500">
+    <rect width="630" height="1500" fill="#a0c0e0"/>
+    <rect x="205" y="130" width="220" height="300" fill="#101010"/>
+    <ellipse cx="315" cy="780" rx="140" ry="340" fill="#bd876c"/>
+  </svg>`;
+  await page.locator('#fileInput').setInputFiles({ name: 'synthetic-hair.svg', mimeType: 'image/svg+xml', buffer: Buffer.from(photo) });
+  await expect(page.locator('#editorCard')).toBeVisible();
+  await page.locator('#format').selectOption('35x45');
+  const hairStartsAt = () => page.locator('#preview').evaluate(canvas => {
+    const pixels=canvas.getContext('2d').getImageData(315,0,1,180).data;
+    for(let y=0;y<180;y++)if(pixels[y*4]<50)return y;
+    return -1;
+  });
+  expect(await hairStartsAt()).toBe(0);
+  await page.locator('#autoPosition').click();
+  await expect(page.locator('#autoPositionStatus')).toContainText('Check that the full hair');
+  expect(Number(await page.locator('#ypos').inputValue())).toBeGreaterThan(100);
+  const hairTop=await hairStartsAt();
+  expect(hairTop).toBeGreaterThan(20);
+  expect(hairTop).toBeLessThan(90);
+  const top=await page.locator('#preview').evaluate(canvas => [...canvas.getContext('2d').getImageData(315,0,1,1).data]);
+  expect(top.slice(0,3)).toEqual([160,192,224]);
+  const [download]=await Promise.all([
+    page.waitForEvent('download'),
+    page.getByRole('button', { name: /download single photo/i }).click()
+  ]);
+  const chunks=[];
+  for await (const chunk of await download.createReadStream())chunks.push(chunk);
+  const exportedTop=await page.evaluate(async base64 => {
+    const image=new Image();image.src=`data:image/jpeg;base64,${base64}`;
+    await image.decode();
+    const canvas=document.createElement('canvas');canvas.width=630;canvas.height=810;
+    const ctx=canvas.getContext('2d');ctx.drawImage(image,0,0);
+    return [...ctx.getImageData(315,5,1,1).data];
+  },Buffer.concat(chunks).toString('base64'));
+  expect(exportedTop[0]).toBeGreaterThan(130);
+  expect(exportedTop[2]).toBeGreaterThan(180);
 });
 
 
@@ -131,9 +168,10 @@ test('auto-position and framing checks use an appropriate profile for both outpu
     us: window.passportAutoPositionProfile('us').targetFace,
     biometric: window.passportAutoPositionProfile('biometric').targetFace,
     canada: window.passportAutoPositionProfile('canada').targetFace,
-    custom: window.passportAutoPositionProfile('custom').targetFace
+    custom: window.passportAutoPositionProfile('custom').targetFace,
+    biometricCrownAllowance: window.passportAutoPositionProfile('biometric').crownAllowance
   }));
-  expect(profiles).toEqual({ us: .43, biometric: .64, canada: .46, custom: .52 });
+  expect(profiles).toEqual({ us: .43, biometric: .64, canada: .46, custom: .52, biometricCrownAllowance: .40 });
 });
 
 test('2×2 print sheet uses a clean exact six-copy layout', async ({ page }) => {

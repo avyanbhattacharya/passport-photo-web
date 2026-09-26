@@ -21,6 +21,10 @@ This document describes implementation-level conventions and invariants that sho
 
 The HTML printer introduces an untrusted-markup import boundary and an isolated editable print document. See [Clean HTML Printer](clean-html-printer.md) for the sanitization allowlist, sandbox/CSP layers, reflow behavior, history limits and print verification boundary.
 
+### Passport photo auto-position
+
+Face landmarks are measured on the original selected image, not on the rendered preview. A centered cover crop can hide hair before the user presses Auto-position. For biometric formats, a bounded, downsampled scan compares the top of the subject with the background on both sides of the original image; when it can see dark hair against a lighter background, the top of that hair constrains the crop. Forehead landmarks provide a conservative fallback when the contrast scan cannot locate hair. The vertical position range permits movement beyond a quarter of the output height for tall source photos; the framing calculation still constrains the image to cover the entire output. When the source does not provide enough background for the requested margin, the UI tells the user to review the result instead of claiming guaranteed compliance. The photo and pixel sampling remain in browser memory.
+
 Public tools are generally directory-based routes containing their own browser application assets. Shared infrastructure should be placed in clearly named shared locations rather than copied into every tool once reuse becomes meaningful.
 
 Before modifying an existing file, read the current branch version first. Do not reconstruct a large production file from an old copy or partial tool output.
